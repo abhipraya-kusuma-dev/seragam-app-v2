@@ -10,6 +10,7 @@ import { ArrowLeft, Upload, Home, List } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Label } from '@/components/ui/label';
+import AppLayout from '@/layouts/app-layout';
 
 interface Props {
     jenjangOptions: string[];
@@ -53,6 +54,7 @@ export default function ItemsCreate({ jenjangOptions, jenisKelaminOptions }: Pro
     };
 
     return (
+        <AppLayout>
         <div className="container mx-auto py-8">
             <Head title="Tambah Item" />
             
@@ -229,5 +231,6 @@ export default function ItemsCreate({ jenjangOptions, jenisKelaminOptions }: Pro
                 </div>
             </Card>
         </div>
+        </AppLayout>
     );
 }

@@ -1,6 +1,7 @@
 <?php
 namespace App\Http\Controllers\AdminGudang;
 use App\Events\OrderReaded;
+use App\Events\OrderReturnedBack;
 use App\Http\Controllers\Controller;
 use App\Models\Order;
 use Illuminate\Http\Request;
@@ -97,7 +98,7 @@ class OrderController extends Controller
             $order->update([
                 'notif_status' => $request->notif_status
             ]);
-            
+
             event(new OrderReaded($order));
 
             return back()->with('success', 'Notification status updated successfully');
@@ -119,6 +120,9 @@ class OrderController extends Controller
             'return_status' => false,
             'notif_status' => true,
         ]);
+
+        event(new OrderReturnedBack($order));
+        
         return back()->with('success', 'Order telah dikirim ulang ke QC');
     }
 }

@@ -8,7 +8,7 @@ import { Order } from '@/types/order';
 import { format } from 'date-fns';
 import { Home, RotateCcw, Search } from 'lucide-react';
 import { type PageProps } from '@inertiajs/core';
-import { Link, usePage } from '@inertiajs/react'; // <-- ADDED usePage
+import { Link, usePage } from '@inertiajs/react';
 import { toast } from 'sonner';
 import { router } from '@inertiajs/react';
 import { 
@@ -101,6 +101,18 @@ export default function OrderIndex({
             }
         }
     );
+    useEcho(
+      'gudang',
+      'OrderReturned',
+      (event: {order: Order}) => {
+        if(auth.user?.role === 'admin_gudang') {
+          router.reload({
+            only: ['returnedOrders', 'counts'],
+          });
+        }
+      }
+    );
+
     // --- END of useEcho IMPLEMENTATION ---
 
     const openOrderDetail = (order: Order) => {

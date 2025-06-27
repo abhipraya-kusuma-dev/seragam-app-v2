@@ -9,6 +9,7 @@ import { useState, useRef } from 'react';
 import { type ReactNode } from 'react';
 import { ArrowLeft } from 'lucide-react';
 import { Link } from '@inertiajs/react';
+import AppLayout from '@/layouts/app-layout';
 
 interface Props {
     item: {
@@ -50,6 +51,7 @@ const StockShow = ({ item }: Props) => {
     };
 
     return (
+        <AppLayout>
         <div className="container mx-auto py-8">
             <Head title={`Stok - ${item.nama_item}`} />
             
@@ -126,7 +128,7 @@ const StockShow = ({ item }: Props) => {
             </Card>
             <Toaster />
         </div>
-        
+        </AppLayout>
     );
 };
 

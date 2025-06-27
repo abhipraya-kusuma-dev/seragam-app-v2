@@ -32,8 +32,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Label } from '@/components/ui/label';
 
 import { cn } from '@/lib/utils';
-import { useEcho } from '@laravel/echo-react'; // <-- ADDED
-import { toast } from 'sonner';                 // <-- ADDED
+import { useEcho } from '@laravel/echo-react';
 
 export interface Order {
     id: number;
@@ -122,11 +121,19 @@ export default function AdminQcDashboard({
         (event: { order: Order }) => {
             // Check if the current user should react to this event
             if (auth.user?.role === 'admin_qc') {
-                // Inform the user that a new order has arrived
-                toast.info("Order baru siap untuk diperiksa.", {
-                    description: `Memperbarui daftar order...`,
+                // Reload data from the server to update the lists and badges
+                router.reload({
+                    only: ['inProgressOrders', 'qcStats'], // Only fetch the props that need updating
                 });
-
+            }
+        }
+    );
+    useEcho(
+        'qc', // Assuming 'qc' is the channel name for Quality Control
+        'OrderReturnedBack', // Assuming this is the event when an order is ready for QC
+        (event: { order: Order }) => {
+            // Check if the current user should react to this event
+            if (auth.user?.role === 'admin_qc') {
                 // Reload data from the server to update the lists and badges
                 router.reload({
                     only: ['inProgressOrders', 'qcStats'], // Only fetch the props that need updating

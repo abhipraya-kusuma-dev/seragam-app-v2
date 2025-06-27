@@ -2,6 +2,7 @@ import { Head, Link } from '@inertiajs/react';
 import { Button } from "@/components/ui/button";
 import { Printer, ArrowLeft, Home } from 'lucide-react';
 import { type PageProps } from '@inertiajs/core';
+import AppLayout from '@/layouts/app-layout';
 
 interface OrderItem {
     id: number;
@@ -27,6 +28,7 @@ interface Props extends PageProps {
 
 const OrderShow = ({ order }: Props) => {
     return (
+        <AppLayout>
         <div className="container mx-auto py-8">
             <Head title={`Detail Order #${order.order_number}`} />
             
@@ -106,6 +108,7 @@ const OrderShow = ({ order }: Props) => {
                 </div>
             </div>
         </div>
+        </AppLayout>
     );
 };
 

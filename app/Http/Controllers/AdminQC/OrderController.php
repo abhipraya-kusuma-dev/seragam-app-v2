@@ -8,6 +8,7 @@ use App\Models\OrderItem;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use App\Models\Stock;
+use App\Events\OrderReturned;
 
 class OrderController extends Controller
 {
@@ -53,6 +54,8 @@ class OrderController extends Controller
                 'return_status' => true,
                 'status' => 'in-progress'
             ]);
+            
+            event(new OrderReturned($order));
         });
 
         return redirect()->back()->with('success', 'Order berhasil dikembalikan ke Gudang');

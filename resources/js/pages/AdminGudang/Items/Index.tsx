@@ -13,6 +13,7 @@ import { useForm } from '@inertiajs/react';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from '@/components/ui/pagination';
 import { cn } from '@/lib/utils';
+import AppLayout from '@/layouts/app-layout';
 
 // Utility function to capitalize first letter of each word
 const capitalizeWords = (str: string) => {
@@ -101,6 +102,7 @@ const ItemsIndex = ({ items, filters, jenjangOptions, jenisKelaminOptions }: Pro
     };
 
     return (
+        <AppLayout>
         <div className="container mx-auto py-8">
             <Head title="Kelola Item" />
             
@@ -403,6 +405,7 @@ const ItemsIndex = ({ items, filters, jenjangOptions, jenisKelaminOptions }: Pro
                 </div>
             </Card>
         </div>
+        </AppLayout>
     );
 };
 

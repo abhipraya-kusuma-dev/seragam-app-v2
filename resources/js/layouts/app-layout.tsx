@@ -9,30 +9,49 @@ import { type PageProps, type Order, type User, type BreadcrumbItem } from '@/ty
 // Komponen "tak terlihat" yang hanya bertugas mendengarkan event.
 function RealtimeNotificationHandler() {
     const { auth } = usePage<PageProps>().props;
-
-    useEcho(
+    if(auth.user?.role === 'admin_gudang') {
+        useEcho(
             'gudang',
             'NewOrderCreated',
             (event: {order: Order}) => {
-                if(auth.user?.role === 'admin_gudang') {
-                    toast.info('Ada Orderan baru', {
-                        description: `Order #${event.order.order_number} perlu dicek`,
-                    });
-                }
+                toast.info('Ada Order yang baru dibuar', {
+                    description: `Order #${event.order.order_number}`,
+                });           
             }
         );
-
-    useEcho(
+        useEcho(
+            'gudang',
+            'OrderReturned',
+            (event: {order: Order}) => {
+                toast.warning('Ada Order yang dikembalikan dari QC', {
+                description: `Order #${event.order.order_number}`,
+                });
+            }
+        );
+    } 
+    if(auth.user?.role === 'admin_qc') {    
+        useEcho(
             'qc',
             'OrderReaded',
             (event: {order: Order}) => {
-                if(auth.user?.role === 'admin_qc') {
-                    toast.info('Ada Order yang baru masuk', {
-                        description: `Order #${event.order.order_number} perlu diqc`,
-                    });
-                }
+                toast.info('Ada Order yang baru masuk', {
+                description: `Order #${event.order.order_number}`,
+                });
             }
         );
+        useEcho(
+            'qc',
+            'OrderReturnedBack',
+            (event: {order: Order}) => {
+                toast.warning('Ada Order yang dikembalikan dari Gudang', {
+                description: `Order #${event.order.order_number}`,
+                });
+            }
+        );
+    }
+
+
+
 
     // TODO: Tambahkan listener untuk alur lain di sini nanti
     // (misalnya, notifikasi dari Gudang ke QC)
@@ -54,7 +73,7 @@ export default function AppLayout({ children }: AppLayoutProps) {
             <RealtimeNotificationHandler />
             
             {/* Menyediakan komponen Toaster untuk menampilkan notifikasi */}
-            <Toaster position="bottom-right" richColors closeButton />
+            <Toaster position="top-center" richColors closeButton />
 
             {/* Konten halaman Anda akan ditampilkan di sini tanpa ada UI tambahan */}
             <main>
