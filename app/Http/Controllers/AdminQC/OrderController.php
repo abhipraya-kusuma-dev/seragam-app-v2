@@ -1,0 +1,132 @@
+<?php
+
+namespace App\Http\Controllers\AdminQC;
+
+use App\Http\Controllers\Controller;
+use App\Models\Order;
+use App\Models\OrderItem;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use App\Models\Stock;
+
+class OrderController extends Controller
+{
+    public function index(Request $request)
+    {
+        if (!$request->user() || $request->user()->role !== 'admin_qc') {
+            abort(403, 'Unauthorized');
+        }
+
+        $orders = Order::where('notif_status', true)
+            ->where('return_status', false)
+            ->where('status', 'pending')
+            ->with('orderItems.item.stock')
+            ->latest()
+            ->paginate(10);
+                
+        return inertia('AdminQC/Orders/Index', [
+            'orders' => $orders,
+            'filters' => request()->only(['search', 'jenjang', 'jenis_kelamin'])
+        ]);
+    }
+
+    
+    public function kembalikanOrder(Request $request, Order $order)
+    {
+        DB::transaction(function () use ($order) {
+            // Restore stock for provided quantities
+            foreach ($order->orderItems as $item) {
+                if ($item->qty_provided > 0) {
+                    Stock::where('item_id', $item->item_id)
+                        ->increment('qty', $item->qty_provided);
+                }
+            }
+
+            // Reset order items
+            $order->orderItems()->update([
+                'qty_provided' => 0,
+                'status' => 'in-progress'
+            ]);
+
+            // Update order status
+            $order->update([
+                'return_status' => true,
+                'status' => 'in-progress'
+            ]);
+        });
+
+        return redirect()->back()->with('success', 'Order berhasil dikembalikan ke Gudang');
+    }
+    public function batalkanOrder(Request $request, Order $order)
+    {
+        DB::transaction(function () use ($order) {
+            // Restore stock for each item
+            foreach ($order->orderItems as $item) {
+                Stock::where('item_id', $item->item_id)
+                    ->increment('qty', $item->qty_requested);
+            }
+
+            // Update order status and reset quantities
+            $order->update(['status' => 'cancelled']);
+            $order->orderItems()->update([
+                'qty_provided' => 0,
+                'status' => 'pending'
+            ]);
+        });
+
+        return redirect()->back()->with('success', 'Order berhasil dibatalkan');
+    }
+
+    public function selesaikanQC(Request $request, Order $order)
+    {
+        $request->validate([
+            'items' => 'required|array',
+            'items.*.id' => 'required|exists:order_items,id',
+            'items.*.qty_provided' => 'required|integer|min:0',
+        ]);
+
+        DB::transaction(function () use ($request, $order) {
+            foreach ($request->items as $itemData) {
+                $orderItem = OrderItem::find($itemData['id']);
+                $newQty = $itemData['qty_provided'];
+                
+                // For pending orders, use the delta for stock reduction
+                $stockReduction = $newQty;
+                if ($order->status === 'pending' && isset($itemData['base_qty'])) {
+                    $stockReduction = $newQty - $itemData['base_qty'];
+                }
+                
+                // Get current stock
+                $stock = $orderItem->item->stock;
+                
+                // Validate stock availability for the delta
+                if ($stockReduction > ($stock->qty ?? 0)) {
+                    throw new \Exception("Stok tidak mencukupi untuk item: ".$orderItem->item->nama_item);
+                }
+                
+                // Reduce stock by the delta amount
+                if ($stockReduction > 0) {
+                    $stock->decrement('qty', $stockReduction);
+                }
+                
+                // Update order item
+                $orderItem->update([
+                    'qty_provided' => $newQty,
+                    'status' => $this->getItemStatus($newQty, $orderItem->qty_requested)
+                ]);
+            }
+
+            $order->load('orderItems');
+            $order->updateStatus();
+        });
+
+        return redirect()->back()->with('success', 'Proses QC berhasil diselesaikan');
+    }
+
+    private function getItemStatus($provided, $requested)
+    {
+        if ($provided === 0) return 'pending';
+        if ($provided === $requested) return 'completed';
+        return 'uncompleted';
+    }
+}
