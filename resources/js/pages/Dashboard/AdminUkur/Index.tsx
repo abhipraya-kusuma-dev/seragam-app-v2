@@ -126,7 +126,7 @@ export default function AdminUkurDashboard() {
                                             <th className="p-4 text-left">Jenjang</th>
                                             <th className="p-4 text-left">Tanggal</th>
                                             <th className="p-4 text-left">Status</th>
-                                            <th className="p-4 text-right">Aksi</th>
+                                            <th className="p-4 text-left">Aksi</th>
                                         </tr>
                                     </thead>
                                     <tbody>
@@ -155,7 +155,7 @@ export default function AdminUkurDashboard() {
                                                              order.status === 'cancelled' ? 'Dibatalkan' : 'Pending'}
                                                         </span>
                                                     </td>
-                                                    <td className="p-4 text-right">
+                                                    <td className="p-4 text-left">
                                                         <Link href={route('admin-ukur.orders.show', { order: order.id })}>
                                                             <Button variant="outline" size="sm">
                                                                 Detail

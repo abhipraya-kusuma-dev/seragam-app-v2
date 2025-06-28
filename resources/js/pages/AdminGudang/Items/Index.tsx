@@ -5,7 +5,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useState, useEffect } from 'react';
 import { Link } from '@inertiajs/react';
-import { ArrowLeft, Plus, Upload, RotateCcw, Trash2 } from 'lucide-react';
+import { ArrowLeft, Plus, Upload, RotateCcw, Trash2, Edit } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
@@ -275,8 +275,9 @@ const ItemsIndex = ({ items, filters, jenjangOptions, jenisKelaminOptions }: Pro
                                     <TableCell className="flex gap-2">
                                         <Link 
                                             href={`/admin/gudang/items/${item.id}/stock`} 
-                                            className="text-primary hover:underline"
+                                            className="text-primary border rounded px-2 py-1 hover:bg-primary/10 flex items-center"
                                         >
+                                            <Edit className="w-4 h-4 mr-2" />
                                             Edit
                                         </Link>
                                         
@@ -285,7 +286,8 @@ const ItemsIndex = ({ items, filters, jenjangOptions, jenisKelaminOptions }: Pro
                                             open={itemToReset === item.id} 
                                             onOpenChange={(open) => open ? setItemToReset(item.id) : setItemToReset(null)}
                                         >
-                                            <AlertDialogTrigger className="text-red-500 hover:underline">
+                                            <AlertDialogTrigger className="text-red-500 hover:bg-red-500/10 flex items-center px-2 py-1 border rounded">
+                                                <RotateCcw className="w-4 h-4 mr-2" />
                                                 Reset
                                             </AlertDialogTrigger>
                                             <AlertDialogContent>

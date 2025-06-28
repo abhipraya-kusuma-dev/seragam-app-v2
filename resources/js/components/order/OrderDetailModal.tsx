@@ -21,6 +21,10 @@ export default function OrderDetailModal({ isOpen, onClose, order, onNotificatio
 
   if (!order) return null;
 
+  const capitalizeWords = (str: string) => {
+    return str.replace(/\b\w/g, (char) => char.toUpperCase());
+  };
+
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
     return date.toLocaleDateString('id-ID', {
@@ -267,8 +271,8 @@ export default function OrderDetailModal({ isOpen, onClose, order, onNotificatio
                     <TableHead>Jenjang</TableHead>
                     <TableHead>Jenis Kelamin</TableHead>
                     <TableHead>Size</TableHead>
-                    <TableHead className="text-right">Jumlah Diminta</TableHead>
-                    <TableHead className="text-right">Jumlah Diberikan</TableHead>
+                    <TableHead className="text-left">Jumlah Diminta</TableHead>
+                    <TableHead className="text-left">Jumlah Diberikan</TableHead>
                     <TableHead>Status</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -276,12 +280,12 @@ export default function OrderDetailModal({ isOpen, onClose, order, onNotificatio
                   {order.order_items && order.order_items.length > 0 ? (
                     order.order_items.map((item) => (
                       <TableRow key={item.id}>
-                        <TableCell className="min-w-[200px]">{item.item.nama_item}</TableCell>
+                        <TableCell className="min-w-[200px]">{capitalizeWords(item.item.nama_item)}</TableCell>
                         <TableCell>{item.item.jenjang}</TableCell>
                         <TableCell>{item.item.jenis_kelamin}</TableCell>
                         <TableCell>{item.item.size}</TableCell>
-                        <TableCell className="text-right">{item.qty_requested}</TableCell>
-                        <TableCell className="text-right">{item.qty_provided}</TableCell>
+                        <TableCell className="text-left">{item.qty_requested}</TableCell>
+                        <TableCell className="text-left">{item.qty_provided}</TableCell>
                         <TableCell className="min-w-[120px]">
                           <span className={`px-2 py-1 rounded-full text-xs ${
                             item.status === 'completed' ? 'bg-green-100 text-green-800' :

@@ -282,6 +282,7 @@ export default function OrderIndex({
     };
 
     return (
+      <AppLayout>
         <div className="min-h-screen">
             <Head title="Kelola Order" />
             
@@ -398,7 +399,7 @@ export default function OrderIndex({
                                 <TableHead>Jenjang</TableHead>
                                 <TableHead>Tanggal</TableHead>
                                 <TableHead className="text-white">Status</TableHead>
-                                <TableHead className="text-right text-white">Aksi</TableHead>
+                                <TableHead className="text-left text-white">Aksi</TableHead>
                             </TableRow>
                         </TableHeader>
                         <TableBody>
@@ -434,8 +435,8 @@ export default function OrderIndex({
                                                 </span>
                                             )}
                                         </TableCell>
-                                        <TableCell className="text-right">
-                                            <div className="flex justify-end gap-2">
+                                        <TableCell className="text-left">
+                                            <div className="flex justify-start gap-2">
                                                 <Button
                                                     variant="outline"
                                                     size="sm"
@@ -479,6 +480,7 @@ export default function OrderIndex({
                 {renderPagination()}
             </main>
             
+            
             {/* Order Detail Modal */}
             <OrderDetailModal 
                 isOpen={isModalOpen}
@@ -486,5 +488,6 @@ export default function OrderIndex({
                 order={selectedOrder}
             />
         </div>
+        </AppLayout>
     );
 }

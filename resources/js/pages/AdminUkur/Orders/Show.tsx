@@ -10,6 +10,7 @@ interface OrderItem {
     jenjang: string;
     jenis_kelamin: string;
     size: string;
+    qty_requested: number;
 }
 
 interface Order {
@@ -27,6 +28,11 @@ interface Props extends PageProps {
 }
 
 const OrderShow = ({ order }: Props) => {
+
+    const capitalizeWords = (str: string) => {
+        return str.replace(/\b\w/g, (char) => char.toUpperCase());
+    };
+
     return (
         <AppLayout>
         <div className="container mx-auto py-8">
@@ -76,15 +82,17 @@ const OrderShow = ({ order }: Props) => {
                                     <th className="p-3 text-left">Jenjang</th>
                                     <th className="p-3 text-left">Jenis Kelamin</th>
                                     <th className="p-3 text-left">Size</th>
+                                    <th className="p-3 text-left">Diminta</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 {order.items.map((item: OrderItem) => (
                                     <tr key={item.id} className="border-t">
-                                        <td className="p-3">{item.nama_item}</td>
+                                        <td className="p-3">{capitalizeWords(item.nama_item)}</td>
                                         <td className="p-3">{item.jenjang}</td>
                                         <td className="p-3">{item.jenis_kelamin}</td>
                                         <td className="p-3">{item.size}</td>
+                                        <td className="p-3">{item.qty_requested}</td>
                                     </tr>
                                 ))}
                             </tbody>

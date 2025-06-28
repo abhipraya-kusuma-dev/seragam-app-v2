@@ -58,6 +58,10 @@ export default function QualityCheckModal({ isOpen, onClose, order }: QualityChe
   const [orderStatus, setOrderStatus] = useState<string>('in-progress');
   const [baseQuantities, setBaseQuantities] = useState<Record<number, number>>({});
 
+  const capitalizeWords = (str: string) => {
+    return str.replace(/\b\w/g, (char) => char.toUpperCase());
+  };
+
   // Initialize order items when order changes
   useEffect(() => {
     if (order) {
@@ -411,20 +415,20 @@ export default function QualityCheckModal({ isOpen, onClose, order }: QualityChe
                     <TableHead>Size</TableHead>
                     <TableHead className="text-right">Diminta</TableHead>
                     <TableHead className="text-right">Stok Tersedia</TableHead>
-                    <TableHead className="text-right">Diterima</TableHead>
+                    <TableHead className="text-center">Diterima</TableHead>
                     <TableHead>Status</TableHead>
-                    <TableHead className="text-right">Input QC</TableHead>
+                    <TableHead className="text-left">Input QC</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {orderItems.map((item) => (
                     <TableRow key={item.id}>
-                      <TableCell className="min-w-[200px]">{item.item.nama_item}</TableCell>
+                      <TableCell className="min-w-[200px]">{capitalizeWords(item.item.nama_item)}</TableCell>
                       <TableCell>{item.item.size}</TableCell>
                       <TableCell className="text-right">{item.qty_requested}</TableCell>
                       <TableCell className="text-right">{item.item.stock?.qty ?? 0}</TableCell>
-                      <TableCell className="text-right">
-                        <div className="flex items-center justify-end">
+                      <TableCell className="text-center">
+                        <div className="flex items-center justify-center">
                           <Button
                             variant="outline"
                             size="icon"
@@ -466,8 +470,8 @@ export default function QualityCheckModal({ isOpen, onClose, order }: QualityChe
                            item.status === 'pending' ? 'Stok Kosong' : 'Perlu Diperiksa'}
                         </span>
                       </TableCell>
-                      <TableCell className="text-right">
-                        <div className="flex justify-end gap-1">
+                      <TableCell className="text-left">
+                        <div className="flex justify-start gap-1">
                           <Button 
                             variant="outline"
                             size="sm"
