@@ -42,8 +42,8 @@ export default function Login({ status }: LoginProps) {
     };
 
     return (
-        <AuthLayout title="Log in to your account" description="Enter your email and password below to log in">
-            <Head title="Log in" />
+        <AuthLayout title="Seragam App" description="Aplikasi kelola orderan seragam">
+            <Head title="Masuk" />
 
             <form className="flex flex-col gap-6" onSubmit={submit}>
                 <div className="grid gap-6">
@@ -58,7 +58,7 @@ export default function Login({ status }: LoginProps) {
                             autoComplete="username"
                             value={data.username}
                             onChange={(e) => setData('username', e.target.value)}
-                            placeholder="Enter your username"
+                            placeholder="Masukkan username"
                         />
                         <InputError message={errors.username} />
                     </div>
@@ -75,31 +75,15 @@ export default function Login({ status }: LoginProps) {
                             autoComplete="current-password"
                             value={data.password}
                             onChange={(e) => setData('password', e.target.value)}
-                            placeholder="Password"
+                            placeholder="Masukkan password"
                         />
                         <InputError message={errors.password} />
                     </div>
 
-                    <div className="flex items-center space-x-3">
-                        <Checkbox
-                            id="remember"
-                            name="remember"
-                            checked={data.remember}
-                            onClick={() => setData('remember', !data.remember)}
-                            tabIndex={3}
-                        />
-                        <Label htmlFor="remember">Remember me</Label>
-                    </div>
-
                     <Button type="submit" className="mt-4 w-full" tabIndex={4} disabled={processing}>
                         {processing && <LoaderCircle className="h-4 w-4 animate-spin" />}
-                        Log in
+                        Masuk
                     </Button>
-                </div>
-
-                <div className="text-center text-sm text-muted-foreground">
-                    Don't have an account?{' '}
-
                 </div>
             </form>
 

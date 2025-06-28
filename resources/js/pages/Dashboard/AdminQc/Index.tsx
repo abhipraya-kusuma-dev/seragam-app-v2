@@ -33,6 +33,7 @@ import { Label } from '@/components/ui/label';
 
 import { cn } from '@/lib/utils';
 import { useEcho } from '@laravel/echo-react';
+import { toast } from 'sonner'; // <-- Import toast for error handling
 
 export interface Order {
     id: number;
@@ -108,47 +109,88 @@ export default function AdminQcDashboard({
 }: Props) {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
+    const [openingQcModalId, setOpeningQcModalId] = useState<number | null>(null); // <-- ADDED
     const perPage = filters?.perPage || 10;
     const [activeTab, setActiveTab] = useState('in-progress');
     const [searchTerm, setSearchTerm] = useState('');
     const [jenjangFilter, setJenjangFilter] = useState('');
     const [genderFilter, setGenderFilter] = useState('');
+    const [activeOrderNumbers, setActiveOrderNumbers] = useState<string[]>([]);
 
-    // --- ADDED useEcho IMPLEMENTATION ---
+    // --- useEcho IMPLEMENTATION ---
     useEcho(
-        'qc', // Assuming 'qc' is the channel name for Quality Control
-        'OrderReaded', // Assuming this is the event when an order is ready for QC
+        'qc',
+        'OrderReaded',
         (event: { order: Order }) => {
-            // Check if the current user should react to this event
             if (auth.user?.role === 'admin_qc') {
-                // Reload data from the server to update the lists and badges
                 router.reload({
-                    only: ['inProgressOrders', 'qcStats'], // Only fetch the props that need updating
+                    only: ['inProgressOrders', 'qcStats'],
                 });
             }
         }
     );
     useEcho(
-        'qc', // Assuming 'qc' is the channel name for Quality Control
-        'OrderReturnedBack', // Assuming this is the event when an order is ready for QC
+        'qc',
+        'OrderReturnedBack',
         (event: { order: Order }) => {
-            // Check if the current user should react to this event
             if (auth.user?.role === 'admin_qc') {
-                // Reload data from the server to update the lists and badges
                 router.reload({
-                    only: ['inProgressOrders', 'qcStats'], // Only fetch the props that need updating
+                    only: ['inProgressOrders', 'qcStats'],
                 });
+            }
+        }
+    );
+    useEcho(
+        'qc',
+        'TriggerPopupQc',
+        (event: {orderNumber: string, modalState: boolean}) => {
+            if (event.modalState) {
+                setActiveOrderNumbers(prev => 
+                    prev.includes(event.orderNumber) ? prev : [...prev, event.orderNumber]
+                );
+            } else {
+                setActiveOrderNumbers(prev => prev.filter(num => num !== event.orderNumber));
             }
         }
     );
     // --- END of useEcho IMPLEMENTATION ---
 
-    const handleOpenModal = (order: Order) => {
-        setSelectedOrder(order);
-        setIsModalOpen(true);
+    const handleOpenModal = async (order: Order) => {
+        setOpeningQcModalId(order.id); // <-- ADDED: Set loading state
+        try {
+            await fetch('/api/trigger/popup-qc-open', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    orderNumber: order.order_number,
+                    modalState: true
+                }),
+            });
+            setSelectedOrder(order);
+            setIsModalOpen(true);
+        } catch (error) {
+            console.error("Failed to open QC modal:", error);
+            toast.error("Gagal membuka modal QC.");
+        } finally {
+            setOpeningQcModalId(null); // <-- ADDED: Reset loading state
+        }
     };
 
-    const handleCloseModal = () => {
+    const handleCloseModal = async() => {
+        if(selectedOrder){
+            await fetch('/api/trigger/popup-qc-closed', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    orderNumber: selectedOrder.order_number,
+                    modalState: false
+                })
+            })
+        }
         setIsModalOpen(false);
         setSelectedOrder(null);
     };
@@ -250,7 +292,6 @@ export default function AdminQcDashboard({
     const renderPagination = (paginator: any, tabName: string) => {
         if (!paginator || paginator.data.length === 0) return null;
 
-        // Build query parameters for pagination
         const queryParams = {
             tab: activeTab,
             search: searchTerm,
@@ -574,10 +615,21 @@ export default function AdminQcDashboard({
                                                                         size="sm"
                                                                         onClick={() => handleOpenModal(order)}
                                                                         className="flex items-center gap-1"
-                                                                        disabled={order.status === 'cancelled'}
+                                                                        disabled={activeOrderNumbers.includes(order.order_number) || openingQcModalId === order.id}
                                                                     >
-                                                                        <ClipboardCheck className="w-4 h-4" />
-                                                                        Periksa
+                                                                        {openingQcModalId === order.id ? (
+                                                                            <>
+                                                                                <svg className="animate-spin h-4 w-4 text-current" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                                                                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                                                                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                                                                </svg>
+                                                                            </>
+                                                                        ) : (
+                                                                            <>
+                                                                                <ClipboardCheck className="w-4 h-4" />
+                                                                                Periksa
+                                                                            </>
+                                                                        )}
                                                                     </Button>
                                                                 </div>
                                                             </TableCell>

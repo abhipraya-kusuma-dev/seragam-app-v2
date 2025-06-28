@@ -24,7 +24,7 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent } from '@/components/ui/card';
-import { useEcho } from '@laravel/echo-react'; // <-- ADDED
+import { useEcho } from '@laravel/echo-react';
 import AppLayout from '@/layouts/app-layout';
 
 interface PaginatedOrders {
@@ -46,7 +46,6 @@ interface PaginatedOrders {
 }
 
 interface Props extends PageProps {
-    // ADDED auth prop to ensure we have user info for the role check
     auth: {
         user: {
             username: string;
@@ -76,48 +75,79 @@ export default function OrderIndex({
     counts,
     filters = {}
 }: Props) {
-    const { auth } = usePage<Props>().props; // <-- ADDED to get user auth info
+    const { auth } = usePage<Props>().props;
     const [activeSegment, setActiveSegment] = useState<'new' | 'viewed' | 'returned'>('new');
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
     const [resendingOrderId, setResendingOrderId] = useState<number | null>(null);
+    const [openingDetailId, setOpeningDetailId] = useState<number | null>(null); // <-- ADDED
     
     // Filter states
     const [search, setSearch] = useState(filters.search || '');
     const [jenjangFilter, setJenjangFilter] = useState(filters.jenjang || 'all');
     const [genderFilter, setGenderFilter] = useState(filters.gender || 'all');
+    const [activeOrderNumbers, setActiveOrderNumbers] = useState<string[]>([]);
 
-    // --- ADDED useEcho IMPLEMENTATION ---
+    // --- useEcho IMPLEMENTATION ---
     useEcho(
         'gudang',
         'NewOrderCreated',
         (event: {order: Order}) => {
-            // Check if the current user should react to this event
             if(auth.user?.role === 'admin_gudang') {
-              // Reload data from the server to update the list and badges
-              router.reload({
-                  only: ['newOrders', 'counts'], // Only fetch the props that need updating
-              });
+                router.reload({
+                    only: ['newOrders', 'counts'],
+                });
             }
         }
     );
     useEcho(
-      'gudang',
-      'OrderReturned',
-      (event: {order: Order}) => {
-        if(auth.user?.role === 'admin_gudang') {
-          router.reload({
-            only: ['returnedOrders', 'counts'],
-          });
+        'gudang',
+        'OrderReturned',
+        (event: {order: Order}) => {
+            if(auth.user?.role === 'admin_gudang') {
+                router.reload({
+                    only: ['returnedOrders', 'counts'],
+                });
+            }
         }
-      }
+    );
+    useEcho(
+        'gudang',
+        'TriggerPopupGudang',
+        (event: {orderNumber: string, modalState: boolean}) => {
+            if (event.modalState) {
+                setActiveOrderNumbers(prev => 
+                    prev.includes(event.orderNumber) ? prev : [...prev, event.orderNumber]
+                );
+            } else {
+                setActiveOrderNumbers(prev => prev.filter(num => num !== event.orderNumber));
+            }
+        }
     );
 
     // --- END of useEcho IMPLEMENTATION ---
 
-    const openOrderDetail = (order: Order) => {
-        setSelectedOrder(order);
-        setIsModalOpen(true);
+    const openOrderDetail = async (order: Order) => {
+        setOpeningDetailId(order.id); // <-- ADDED: Set loading state
+        try {
+            // Notify other clients this order is being opened
+            await fetch(`/api/trigger/popup-gudang-open`, {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({
+                    orderNumber: order.order_number,
+                    modalState: true
+                }),
+            });
+            
+            setSelectedOrder(order);
+            setIsModalOpen(true);
+        } catch (error) {
+            console.error("Failed to open order detail:", error);
+            toast.error('Gagal membuka detail order.');
+        } finally {
+            setOpeningDetailId(null); // <-- ADDED: Reset loading state
+        }
     };
 
     // Apply filters when they change
@@ -165,7 +195,7 @@ export default function OrderIndex({
                     description: 'Order telah dikembalikan ke proses QC'
                 });
             },
-            onError: (error: any) => { // Type annotation for error
+            onError: (error: any) => {
                 toast.error('Gagal mengirim ulang order', {
                     description: error.message || 'Terjadi kesalahan saat mengirim ulang order'
                 });
@@ -441,8 +471,18 @@ export default function OrderIndex({
                                                     variant="outline"
                                                     size="sm"
                                                     onClick={() => openOrderDetail(order)}
+                                                    disabled={activeOrderNumbers.includes(order.order_number) || openingDetailId === order.id}
                                                 >
-                                                    Detail
+                                                    {openingDetailId === order.id ? (
+                                                        <>
+                                                            <svg className="animate-spin h-4 w-4 text-current" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                                            </svg> 
+                                                        </>
+                                                    ) : (
+                                                        'Detail'
+                                                    )}
                                                 </Button>
                                                 {activeSegment === 'returned' && (
                                                     <Button
@@ -484,7 +524,20 @@ export default function OrderIndex({
             {/* Order Detail Modal */}
             <OrderDetailModal 
                 isOpen={isModalOpen}
-                onClose={() => setIsModalOpen(false)}
+                onClose={async () => {
+                    setIsModalOpen(false);
+                    // Notify other clients this order is being closed
+                    if (selectedOrder) {
+                        await fetch(`/api/trigger/popup-gudang-closed`, {
+                            method: 'POST',
+                            headers: {'Content-Type': 'application/json'},
+                            body: JSON.stringify({
+                                orderNumber: selectedOrder.order_number,
+                                modalState: false
+                            }),
+                        });
+                    }
+                }}
                 order={selectedOrder}
             />
         </div>

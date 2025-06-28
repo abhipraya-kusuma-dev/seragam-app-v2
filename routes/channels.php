@@ -17,6 +17,11 @@ Broadcast::channel('qc', function ($user) {
     return $user && $user->role === 'admin_qc';
 });
 
+Broadcast::channel('ukur', function ($user) {
+    // Ensure we're authorizing the correct channel name
+    return $user && $user->role === 'admin_ukur';
+});
+
 // // Channel default, baik untuk dimiliki
 // Broadcast::channel('App.Models.User.{id}', function ($user, $id) {
 //     return (int) $user->id === (int) $id;

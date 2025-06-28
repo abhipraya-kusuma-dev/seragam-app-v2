@@ -50,9 +50,6 @@ function RealtimeNotificationHandler() {
         );
     }
 
-
-
-
     // TODO: Tambahkan listener untuk alur lain di sini nanti
     // (misalnya, notifikasi dari Gudang ke QC)
 

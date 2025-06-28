@@ -10,6 +10,7 @@ import { Plus, Trash2, ArrowLeft, Home, Minus } from 'lucide-react';
 import { type PageProps } from '@inertiajs/core';
 import { toast } from 'sonner';
 import AppLayout from '@/layouts/app-layout';
+import { useEcho } from '@laravel/echo-react';
 
 // [CATATAN] Semua interface lokal Anda dipertahankan sesuai permintaan.
 interface Item {
@@ -53,12 +54,23 @@ export default function CreateOrder({ items, jenjangOptions, jenisKelaminOptions
         jenis_kelamin: '',
         items: [],
     });
-
     const [search, setSearch] = useState('');
+    const [currentNextOrderId, setCurrentNextOrderId] = useState<number | undefined>(nextOrderId);
     
+    useEcho(
+        'ukur',
+        'NewOrderNumber',
+        (event: { nextOrderId: number }) => {
+            toast.info('Nomor Order Baru', {
+                description: `ORD-${(event.nextOrderId + 1).toString().padStart(5, '0')}`,
+            });
+            setCurrentNextOrderId(event.nextOrderId + 1);
+        }
+    );
+
     const previewOrderNumber = useMemo(() => {
-        return nextOrderId ? `ORD-${nextOrderId.toString().padStart(5, '0')}` : 'ORD-XXXXX';
-    }, [nextOrderId]);
+        return currentNextOrderId ? `ORD-${currentNextOrderId.toString().padStart(5, '0')}` : 'ORD-XXXXX';
+    }, [currentNextOrderId]);
     
     // [LOGIKA ASLI ANDA] Filter dipertahankan.
     const filteredItemsMemo = useMemo(() => {

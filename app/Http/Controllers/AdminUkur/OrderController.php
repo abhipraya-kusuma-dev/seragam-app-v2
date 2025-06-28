@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\AdminUkur;
 
+use App\Events\NewOrderNumber;
 use App\Http\Controllers\Controller;
 use App\Models\Item;
 use App\Models\Order;
@@ -101,6 +102,7 @@ class OrderController extends Controller
                 'order_number' => 'ORD-' . str_pad($order->id, 5, '0', STR_PAD_LEFT)
             ]);
 
+            event(new NewOrderNumber($order->id));
 
             foreach ($request->items as $item) {
                 // Create order item with quantity
