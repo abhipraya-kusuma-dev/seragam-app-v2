@@ -241,7 +241,9 @@ export default function AdminGudangDashboard() {
                                                         {new Date(order.created_at).toLocaleDateString('id-ID', {
                                                             day: '2-digit',
                                                             month: 'short',
-                                                            year: 'numeric'
+                                                            year: 'numeric',
+                                                            hour: '2-digit',
+                                                            minute: '2-digit'
                                                         })}
                                                     </td>
                                                     <td className="p-4">

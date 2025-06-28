@@ -9,6 +9,7 @@ import { type BreadcrumbItem } from '@/types';
 import { PageProps, router } from '@inertiajs/core';
 import { Link } from '@inertiajs/react';
 import { useForm } from '@inertiajs/react';
+import { debounce } from 'lodash';
 import {
     CheckCircle,
     XCircle,
@@ -24,13 +25,12 @@ import {
     ChevronLeft,
     ChevronRight
 } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import QualityCheckModal from '@/components/qc/QualityCheckModal';
-import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from '@/components/ui/pagination';
+import { Pagination, PaginationContent, PaginationItem, PaginationNext, PaginationPrevious } from '@/components/ui/pagination';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
-
 import { cn } from '@/lib/utils';
 import { useEcho } from '@laravel/echo-react';
 import { toast } from 'sonner'; // <-- Import toast for error handling
@@ -155,6 +155,33 @@ export default function AdminQcDashboard({
     );
     // --- END of useEcho IMPLEMENTATION ---
 
+    useEffect(() => {
+        // Using debounce to avoid sending a request on every keystroke
+        const debouncedSearch = debounce(() => {
+            router.get(
+                '/dashboard',
+                {
+                    tab: activeTab,
+                    search: searchTerm,
+                    jenjang: jenjangFilter,
+                    gender: genderFilter,
+                    perPage: perPage,
+                },
+                {
+                    preserveState: true,
+                    preserveScroll: true,
+                    replace: true, // Avoids polluting browser history
+                }
+            );
+        }, 300); // 300ms delay
+    
+        debouncedSearch();
+    
+        // Cleanup function to cancel the debounce on component unmount
+        return () => debouncedSearch.cancel();
+    
+    }, [activeTab, searchTerm, jenjangFilter, genderFilter, perPage]);
+
     const handleOpenModal = async (order: Order) => {
         setOpeningQcModalId(order.id); // <-- ADDED: Set loading state
         try {
@@ -197,9 +224,6 @@ export default function AdminQcDashboard({
 
     const handleTabChange = (tab: string) => {
         setActiveTab(tab);
-        setSearchTerm('');
-        setJenjangFilter('');
-        setGenderFilter('');
     };
 
     const breadcrumbs: BreadcrumbItem[] = [
@@ -207,21 +231,13 @@ export default function AdminQcDashboard({
     ];
     const logoutForm = useForm();
 
-    const formatDate = (dateString: string) => {
+    const formatTableDate = (dateString: string) => {
         return new Date(dateString).toLocaleDateString('id-ID', {
             day: '2-digit',
             month: 'short',
             year: 'numeric',
             hour: '2-digit',
             minute: '2-digit'
-        });
-    };
-
-    const formatTableDate = (dateString: string) => {
-        return new Date(dateString).toLocaleDateString('id-ID', {
-            day: '2-digit',
-            month: 'short',
-            year: 'numeric'
         });
     };
 
@@ -254,39 +270,8 @@ export default function AdminQcDashboard({
 
     const inProgressOrdersCount = qcStats?.inProgress || 0;
 
-    const filterOrders = (orders: any) => {
-        if (!orders?.data) return orders;
 
-        const filtered = {
-            ...orders,
-            data: orders.data.filter((order: Order) => {
-                const matchesSearch =
-                    searchTerm === '' ||
-                    order.order_number.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                    order.nama_murid.toLowerCase().includes(searchTerm.toLowerCase());
 
-                const matchesJenjang =
-                    jenjangFilter === '' ||
-                    jenjangFilter === 'all' ||
-                    order.jenjang === jenjangFilter;
-
-                const matchesGender =
-                    genderFilter === '' ||
-                    genderFilter === 'all' ||
-                    order.jenis_kelamin === genderFilter;
-
-                return matchesSearch && matchesJenjang && matchesGender;
-            })
-        };
-
-        return filtered;
-    };
-
-    const filteredInProgress = filterOrders(inProgressOrders);
-    const filteredCompleted = filterOrders(completedOrders);
-    const filteredPending = filterOrders(pendingOrders);
-    const filteredReturned = filterOrders(returnedOrders);
-    const filteredCancelled = filterOrders(cancelledOrders);
 
     // Helper function to render pagination
     const renderPagination = (paginator: any, tabName: string) => {
@@ -571,14 +556,14 @@ export default function AdminQcDashboard({
                             <CardHeader>
                                 <CardTitle className="flex items-center gap-2">
                                     <ClipboardCheck className="w-5 h-5" />
-                                    Order Perlu Diperiksa ({filteredInProgress?.data?.length || 0})
+                                    Order Perlu Diperiksa ({inProgressOrders?.data?.length || 0})
                                 </CardTitle>
                                 <p className="text-sm text-muted-foreground">
                                     Daftar order yang perlu di-QC
                                 </p>
                             </CardHeader>
                             <CardContent>
-                                {filteredInProgress?.data?.length > 0 ? (
+                                {inProgressOrders?.data?.length > 0 ? (
                                     <>
                                         <Table>
                                             <TableHeader>
@@ -593,7 +578,7 @@ export default function AdminQcDashboard({
                                                 </TableRow>
                                             </TableHeader>
                                             <TableBody>
-                                                {filteredInProgress.data
+                                                {inProgressOrders.data
                                                     .sort((a: Order, b: Order) =>
                                                         new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
                                                     )
@@ -656,14 +641,14 @@ export default function AdminQcDashboard({
                             <CardHeader>
                                 <CardTitle className="flex items-center gap-2">
                                     <CheckCircle className="w-5 h-5 text-green-600" />
-                                    Order Selesai ({filteredCompleted?.data?.length || 0})
+                                    Order Selesai ({completedOrders?.data?.length || 0})
                                 </CardTitle>
                                 <p className="text-sm text-muted-foreground">
                                     Riwayat order yang sudah berhasil melewati proses quality control
                                 </p>
                             </CardHeader>
                             <CardContent>
-                                {filteredCompleted?.data?.length > 0 ? (
+                                {completedOrders?.data?.length > 0 ? (
                                     <>
                                         <Table>
                                             <TableHeader>
@@ -677,7 +662,7 @@ export default function AdminQcDashboard({
                                                 </TableRow>
                                             </TableHeader>
                                             <TableBody>
-                                                {filteredCompleted.data
+                                                {completedOrders.data
                                                     .sort((a: Order, b: Order) =>
                                                         new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime()
                                                     )
@@ -716,14 +701,14 @@ export default function AdminQcDashboard({
                             <CardHeader>
                                 <CardTitle className="flex items-center gap-2">
                                     <Clock className="w-5 h-5 text-orange-600" />
-                                    Order Pending ({filteredPending?.data?.length || 0})
+                                    Order Pending ({pendingOrders?.data?.length || 0})
                                 </CardTitle>
                                 <p className="text-sm text-muted-foreground">
                                     Order yang sedang menunggu pemeriksaan
                                 </p>
                             </CardHeader>
                             <CardContent>
-                                {filteredPending?.data?.length > 0 ? (
+                                {pendingOrders?.data?.length > 0 ? (
                                     <>
                                         <Table>
                                             <TableHeader>
@@ -738,7 +723,7 @@ export default function AdminQcDashboard({
                                                 </TableRow>
                                             </TableHeader>
                                             <TableBody>
-                                                {filteredPending.data
+                                                {pendingOrders.data
                                                     .sort((a: Order, b: Order) =>
                                                         new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime()
                                                     )
@@ -790,14 +775,14 @@ export default function AdminQcDashboard({
                             <CardHeader>
                                 <CardTitle className="flex items-center gap-2">
                                     <RotateCcw className="w-5 h-5 text-red-600" />
-                                    Order Dikembalikan ({filteredReturned?.data?.length || 0})
+                                    Order Dikembalikan ({returnedOrders?.data?.length || 0})
                                 </CardTitle>
                                 <p className="text-sm text-muted-foreground">
                                     Order yang dikembalikan karena barang yang diterima tidak sesuai
                                 </p>
                             </CardHeader>
                             <CardContent>
-                                {filteredReturned?.data?.length > 0 ? (
+                                {returnedOrders?.data?.length > 0 ? (
                                     <>
                                         <Table>
                                             <TableHeader>
@@ -811,7 +796,7 @@ export default function AdminQcDashboard({
                                                 </TableRow>
                                             </TableHeader>
                                             <TableBody>
-                                                {filteredReturned.data
+                                                {returnedOrders.data
                                                     .sort((a: Order, b: Order) =>
                                                         new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime()
                                                     )
@@ -850,14 +835,14 @@ export default function AdminQcDashboard({
                             <CardHeader>
                                 <CardTitle className="flex items-center gap-2">
                                     <XCircle className="w-5 h-5 text-red-600" />
-                                    Order Dibatalkan ({filteredCancelled?.data?.length || 0})
+                                    Order Dibatalkan ({cancelledOrders?.data?.length || 0})
                                 </CardTitle>
                                 <p className="text-sm text-muted-foreground">
                                     Order yang dibatalkan karna kesalahan order
                                 </p>
                             </CardHeader>
                             <CardContent>
-                                {filteredCancelled?.data?.length > 0 ? (
+                                {cancelledOrders?.data?.length > 0 ? (
                                     <>
                                         <Table>
                                             <TableHeader>
@@ -871,7 +856,7 @@ export default function AdminQcDashboard({
                                                 </TableRow>
                                             </TableHeader>
                                             <TableBody>
-                                                {filteredCancelled.data
+                                                {cancelledOrders.data
                                                     .sort((a: Order, b: Order) =>
                                                         new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime()
                                                     )

@@ -107,8 +107,10 @@ const OrderIndex = ({ orders }: Props) => {
                                     <TableCell>
                                         {new Date(order.created_at).toLocaleDateString('id-ID', {
                                             day: '2-digit',
-                                            month: 'long',
-                                            year: 'numeric'
+                                            month: 'short',
+                                            year: 'numeric',
+                                            hour: '2-digit',
+                                            minute: '2-digit'
                                         })}
                                     </TableCell>
                                     <TableCell>

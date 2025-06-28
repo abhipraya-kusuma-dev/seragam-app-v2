@@ -142,7 +142,14 @@ export default function AdminUkurDashboard() {
                                                     <td className="p-4 font-medium">{order.order_number}</td>
                                                     <td className="p-4">{order.nama_murid}</td>
                                                     <td className="p-4">{order.jenjang}</td>
-                                                    <td className="p-4">{new Date(order.created_at).toLocaleDateString('id-ID')}</td>
+                                                    <td className="p-4">{new Date(order.created_at).toLocaleDateString('id-ID', {
+                                                            day: '2-digit',
+                                                            month: 'short',
+                                                            year: 'numeric',
+                                                            hour: '2-digit',
+                                                            minute: '2-digit'
+                                                        })}
+                                                    </td>
                                                     <td className="p-4">
                                                         <span className={`px-2 py-1 rounded-full text-xs ${
                                                             order.status === 'completed' ? 'bg-green-100 text-green-800' :

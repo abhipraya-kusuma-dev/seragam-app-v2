@@ -16,7 +16,7 @@ class AdminQCDashboardController extends Controller
         $user = Auth::user();
         
         // Get parameters from request
-        $perPage = $request->input('perPage', 5);
+        $perPage = $request->input('perPage', 15);
         $tab = $request->input('tab', 'in-progress');
         $search = $request->input('search', '');
         $jenjang = $request->input('jenjang', '');
