@@ -83,7 +83,6 @@ COPY --from=frontend /app/node_modules ./node_modules
 # Install PHP dependencies
 RUN composer install --no-dev --optimize-autoloader && \
     php artisan config:clear && \
-    php artisan cache:clear && \
     php artisan storage:link && \
     php artisan octane:install --server=swoole
 
