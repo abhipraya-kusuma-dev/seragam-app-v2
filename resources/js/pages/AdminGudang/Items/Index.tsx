@@ -14,6 +14,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Pagination, PaginationContent, PaginationItem, PaginationNext, PaginationPrevious } from '@/components/ui/pagination';
 import { cn } from '@/lib/utils';
 import AppLayout from '@/layouts/app-layout';
+import { toast } from 'sonner';
 
 // Utility function to capitalize first letter of each word
 const capitalizeWords = (str: string) => {
@@ -47,9 +48,10 @@ interface Props {
     };
     jenjangOptions: string[];
     jenisKelaminOptions: string[];
+    templateUrl: string;
 }
 
-const ItemsIndex = ({ items, filters, jenjangOptions, jenisKelaminOptions }: Props) => {
+const ItemsIndex = ({ items, filters, jenjangOptions, jenisKelaminOptions, templateUrl }: Props) => {
     const [search, setSearch] = useState(filters.search || '');
     const [jenjang, setJenjang] = useState(filters.jenjang || 'all');
     const [jenisKelamin, setJenisKelamin] = useState(filters.jenis_kelamin || 'all');
@@ -78,6 +80,50 @@ const ItemsIndex = ({ items, filters, jenjangOptions, jenisKelaminOptions }: Pro
 
         return () => clearTimeout(handler);
     }, [search, jenjang, jenisKelamin]);
+
+    const handleDownloadTemplate = async (e: React.MouseEvent<HTMLAnchorElement>) => {
+        // 1. Mencegah link default berjalan
+        e.preventDefault();
+
+        // 2. Tampilkan toast loading dan simpan ID-nya
+        const toastId = toast.loading('Sedang menyiapkan file template...');
+
+        try {
+            // 3. Ambil file dari server
+            const response = await fetch(templateUrl);
+
+            if (!response.ok) {
+                // Lemparkan error jika server gagal merespon (misal: 500 Internal Server Error)
+                throw new Error('Gagal mengambil file dari server.');
+            }
+
+            // 4. Ubah respons menjadi blob (data biner)
+            const blob = await response.blob();
+
+            // 5. Buat URL sementara untuk blob tersebut
+            const url = window.URL.createObjectURL(blob);
+            
+            // 6. Buat link sementara, klik, lalu hapus untuk memicu download
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'template_stok.xlsx'; // Nama file yang akan diunduh
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+            window.URL.revokeObjectURL(url); // Hapus URL sementara dari memori
+
+            // 7. Update toast menjadi success
+            toast.success('Template berhasil diunduh!', { id: toastId });
+
+        } catch (error) {
+            console.error('Download template error:', error);
+            // 8. Jika terjadi error, update toast menjadi error
+            toast.error('Gagal menyiapkan file.', {
+                description: 'Terjadi kesalahan saat mencoba mengunduh.',
+                id: toastId,
+            });
+        }
+    };
 
     const handleBulkSubmit = (e: React.FormEvent) => {
         e.preventDefault();
@@ -157,7 +203,11 @@ const ItemsIndex = ({ items, filters, jenjangOptions, jenisKelaminOptions }: Pro
                                         )}
                                         <p className="text-sm text-muted-foreground">
                                             Format file harus sesuai template. 
-                                            <a href="/templates/template_stok.xlsx" className="text-primary ml-1 hover:underline">
+                                            <a 
+                                                href={templateUrl}
+                                                onClick={handleDownloadTemplate}
+                                                className="text-primary ml-1 hover:underline cursor-pointer"
+                                            >
                                                 Unduh template disini
                                             </a>
                                         </p>

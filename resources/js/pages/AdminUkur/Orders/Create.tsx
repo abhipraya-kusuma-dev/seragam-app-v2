@@ -85,7 +85,7 @@ export default function CreateOrder({ items, jenjangOptions, jenisKelaminOptions
             filtered = filtered.filter(item => item.jenjang === data.jenjang || item.jenjang.includes(data.jenjang));
         }
         if (data.jenis_kelamin) {
-            filtered = filtered.filter(item => item.jenis_kelamin === data.jenis_kelamin);
+            filtered = filtered.filter(item => item.jenis_kelamin === data.jenis_kelamin || item.jenis_kelamin === 'UNI');
         }
         if (search) {
             const searchLower = search.toLowerCase();

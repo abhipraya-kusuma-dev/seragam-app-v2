@@ -33,9 +33,12 @@ Route::middleware(['auth'])->prefix('/admin/gudang')->group(function () {
     Route::get('/items/create', [ItemsController::class, 'create'])
         ->name('admin-gudang.items.create');
     Route::resource('/items', ItemsController::class)
-        ->names('admin-gudang.items');
+        ->except(['show'])->names('admin-gudang.items');
     Route::post('/items/import', [ItemsController::class, 'import'])
         ->name('admin-gudang.items.import');
+
+    // Route download excel template
+    Route::get('/items/template', [ItemsController::class, 'downloadTemplate'])->name('admin-gudang.items.template');
     
     // Stock routes
     Route::get('/items/{item}/stock', [StockController::class, 'show'])

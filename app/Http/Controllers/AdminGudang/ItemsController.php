@@ -10,6 +10,7 @@ use Maatwebsite\Excel\Excel;
 use Maatwebsite\Excel\Concerns\ToCollection;
 use Maatwebsite\Excel\Concerns\WithHeadingRow;
 use Illuminate\Support\Facades\DB;
+use App\Exports\ItemTemplateExport;
 
 class ItemsController extends Controller
 {
@@ -54,7 +55,17 @@ class ItemsController extends Controller
                 'SMA-SMK', 'SD-SMP-SMA-SMK'
             ],
             'jenisKelaminOptions' => ['Pria', 'Wanita', 'UNI'],
+            'templateUrl' => route('admin-gudang.items.template'),
         ]);
+    }
+
+    public function downloadTemplate(Request $request)
+    {
+        if (!$request->user() || $request->user()->role !== 'admin_gudang') {
+            abort(403, 'Unauthorized');
+        }
+
+        return Excel::download(new ItemTemplateExport, 'template_stok.xlsx');
     }
 
     public function create(Request $request)

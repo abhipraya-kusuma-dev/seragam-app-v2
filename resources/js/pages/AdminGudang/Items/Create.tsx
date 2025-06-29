@@ -11,6 +11,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Label } from '@/components/ui/label';
 import AppLayout from '@/layouts/app-layout';
+import { toast } from 'sonner';
 
 interface Props {
     jenjangOptions: string[];
@@ -42,11 +43,13 @@ export default function ItemsCreate({ jenjangOptions, jenisKelaminOptions }: Pro
             post('/admin/gudang/items/import', {
                 forceFormData: true,
                 onSuccess: () => {
+                    toast.success('File berhasil diimpor!');
                     reset('excel_file');
                     setFile(null);
                     setImportError(null);
                 },
                 onError: (errors) => {
+                    toast.error(errors.excel_file || 'Terjadi kesalahan saat mengimpor file.');
                     setImportError(errors.excel_file || 'Terjadi kesalahan saat mengimpor file.');
                 }
             });
@@ -181,7 +184,17 @@ export default function ItemsCreate({ jenjangOptions, jenisKelaminOptions }: Pro
                                         </table>
                                     </div>
                                 </div>
-
+                                <p className="text-sm text-muted-foreground pt-2">
+                                    Template: {' '}
+                                    <a
+                                        href="/templates/template_item.xlsx"
+                                        onClick={(e) => toast.success('Template berhasil diunduh!')}
+                                        className="font-medium text-primary hover:underline"
+                                        download
+                                    >
+                                        Unduh template Excel disini.
+                                    </a>
+                                </p>
                                 <div className="space-y-4">
                                     <div className="flex gap-2 items-center">
                                         <Upload className="w-5 h-5"/>

@@ -178,7 +178,7 @@ export default function OrderDetailModal({ isOpen, onClose, order, onNotificatio
     } catch (error) {
       console.error('Error downloading PDF:', error);
       toast.error('Gagal mengunduh PDF', {
-        description: 'Silakan coba lagi'
+        description: 'Silakan coba lagi',
       });
     } finally {
       setIsDownloading(false);
