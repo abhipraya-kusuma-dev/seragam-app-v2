@@ -60,6 +60,7 @@ These instructions will get you a copy of the project up and running on your loc
     ```bash
     php artisan migrate
     ```
+    (use --seed to seed admin account)
 
 6.  **Compile front-end assets:**
     ```bash
