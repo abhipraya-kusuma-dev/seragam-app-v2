@@ -1,10 +1,10 @@
-import React, { useEffect, type ReactNode } from 'react';
+import { type ReactNode } from 'react';
 import { usePage } from '@inertiajs/react';
 import { useEcho } from '@laravel/echo-react';
 import { Toaster, toast } from 'sonner';
 
 // [PERBAIKAN] Mengimpor tipe yang benar dari file terpusat Anda.
-import { type PageProps, type Order, type User, type BreadcrumbItem } from '@/types';
+import { type PageProps, type Order, type BreadcrumbItem } from '@/types';
 
 // Komponen "tak terlihat" yang hanya bertugas mendengarkan event.
 function RealtimeNotificationHandler() {

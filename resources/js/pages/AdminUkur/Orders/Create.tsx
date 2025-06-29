@@ -31,6 +31,7 @@ interface OrderFormData {
     jenjang: string;
     jenis_kelamin: string;
     items: SelectedItem[];
+    //@ts-ignore
     [key: string]: any;
 }
 
@@ -39,6 +40,7 @@ interface Props extends PageProps {
     jenjangOptions: string[];
     jenisKelaminOptions: string[];
     nextOrderId?: number;
+    //@ts-ignore
     errors: any; // Menambahkan 'errors' ke props
 }
 

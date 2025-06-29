@@ -2,7 +2,7 @@ import { Head, Link } from '@inertiajs/react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Button } from "@/components/ui/button"
 import { ArrowLeft, Plus } from 'lucide-react';
-import { usePage, router } from '@inertiajs/react';
+import { router } from '@inertiajs/react';
 import { 
   Pagination, 
   PaginationContent, 

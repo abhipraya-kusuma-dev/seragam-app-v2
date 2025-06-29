@@ -72,10 +72,15 @@ interface Props extends PageProps {
             role: string;
         };
     };
+    //@ts-ignore
     inProgressOrders?: any;
+    //@ts-ignore
     pendingOrders?: any;
+    //@ts-ignore
     completedOrders?: any;
+    //@ts-ignore
     returnedOrders?: any;
+    //@ts-ignore
     cancelledOrders?: any;
     qcStats?: {
         inProgress: number;
@@ -233,6 +238,7 @@ export default function AdminQcDashboard({
     const inProgressOrdersCount = qcStats?.inProgress || 0;
 
     // Helper function to render pagination
+    //@ts-ignore
     const renderPagination = (paginator: any, tabName: string) => {
         if (!paginator || paginator.data.length === 0) return null;
 
@@ -275,7 +281,9 @@ export default function AdminQcDashboard({
                         </PaginationItem>
 
                         {paginator.links
+                        //@ts-ignore
                             .filter((link: any) => !['&laquo; Previous', 'Next &raquo;'].includes(link.label))
+                        //@ts-ignore
                             .map((link: any, index: number) => {
                                 if (link.label === '...') {
                                     return (

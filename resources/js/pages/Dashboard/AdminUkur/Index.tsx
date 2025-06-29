@@ -32,10 +32,7 @@ interface Props extends PageProps {
 }
 
 export default function AdminUkurDashboard() {
-    const { auth, orderStats, recentOrders } = usePage<Props>().props;
-    const breadcrumbs: BreadcrumbItem[] = [
-        { title: 'Dashboard', href: '/dashboard' }
-    ];
+    const { auth, recentOrders } = usePage<Props>().props;
     const logoutForm = useForm();
 
     return (
