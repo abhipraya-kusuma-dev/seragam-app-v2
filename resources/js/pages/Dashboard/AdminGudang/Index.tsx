@@ -13,15 +13,11 @@ import {
     RotateCcw,
     LogOut,
     List,
-    ChartArea,
     ShoppingBag
 } from 'lucide-react';
-import { useState, useEffect } from 'react';
-import OrderDetailModal from '@/components/order/OrderDetailModal';
+import { useState } from 'react';
 import { Order } from '@/types/order';
 import { useEcho } from '@laravel/echo-react';
-import { Toaster, toast } from 'sonner';
-import { router } from '@inertiajs/react';
 
 interface Props extends PageProps {
     auth: {
@@ -66,16 +62,6 @@ export default function AdminGudangDashboard() {
             }
         }
     );
-
-
-    // State for modal
-    const [isModalOpen, setIsModalOpen] = useState(false);
-    const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
-
-    const openOrderDetail = (order: Order) => {
-        setSelectedOrder(order);
-        setIsModalOpen(true);
-    };
 
     return (
         <AppLayout>
@@ -267,12 +253,6 @@ export default function AdminGudangDashboard() {
                 </div>
             </div>
             
-            {/* Order Detail Modal */}
-            <OrderDetailModal 
-                isOpen={isModalOpen}
-                onClose={() => setIsModalOpen(false)}
-                order={selectedOrder}
-            />
         </AppLayout>
     );
 }

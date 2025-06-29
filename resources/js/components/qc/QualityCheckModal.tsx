@@ -124,7 +124,7 @@ export default function QualityCheckModal({ isOpen, onClose, order }: QualityChe
         const maxAllowed = getMaxAllowedQty(item);
         
         // Ensure quantity doesn't exceed allowed limits
-        let newQty = Math.min(Math.max(0, qty), maxAllowed);
+        const newQty = Math.min(Math.max(0, qty), maxAllowed);
 
         // Update status based on quantity
         let newStatus: typeof item.status = 'in-progress';

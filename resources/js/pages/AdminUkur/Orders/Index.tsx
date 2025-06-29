@@ -54,8 +54,6 @@ interface Props {
 }
 
 const OrderIndex = ({ orders }: Props) => {
-    const { url } = usePage();
-
     return (
 
         <AppLayout>

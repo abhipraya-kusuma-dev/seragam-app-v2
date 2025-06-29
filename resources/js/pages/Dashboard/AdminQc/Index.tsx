@@ -226,9 +226,6 @@ export default function AdminQcDashboard({
         setActiveTab(tab);
     };
 
-    const breadcrumbs: BreadcrumbItem[] = [
-        { title: 'Dashboard QC', href: '/admin-qc/dashboard' }
-    ];
     const logoutForm = useForm();
 
     const formatTableDate = (dateString: string) => {
@@ -241,37 +238,7 @@ export default function AdminQcDashboard({
         });
     };
 
-    const getStatusBadge = (status: string) => {
-        const statusConfig = {
-            'in-progress': { label: 'Sedang Diproses', className: 'bg-blue-100 text-blue-800 border-blue-200' },
-            'completed': { label: 'Selesai', className: 'bg-green-100 text-green-800 border-green-200' },
-            'pending': { label: 'Menunggu Stok', className: 'bg-yellow-100 text-yellow-800 border-yellow-200' },
-            'cancelled': { label: 'Dibatalkan', className: 'bg-red-100 text-red-800 border-red-200' },
-            'uncompleted': { label: 'Belum Lengkap', className: 'bg-gray-100 text-gray-800 border-gray-200' }
-        };
-
-        const config = statusConfig[status as keyof typeof statusConfig] || statusConfig['in-progress'];
-
-        return (
-            <Badge variant="outline" className={`flex items-center gap-1 ${config.className}`}>
-                {config.label}
-            </Badge>
-        );
-    };
-
-    const handleQcOrder = (order: Order) => {
-        setSelectedOrder(order);
-        setIsModalOpen(true);
-    };
-
-    const handleViewOrder = (orderId: number) => {
-        window.location.href = `/admin-qc/orders/${orderId}`;
-    };
-
     const inProgressOrdersCount = qcStats?.inProgress || 0;
-
-
-
 
     // Helper function to render pagination
     const renderPagination = (paginator: any, tabName: string) => {

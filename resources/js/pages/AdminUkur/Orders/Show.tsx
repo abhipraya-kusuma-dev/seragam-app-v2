@@ -1,6 +1,5 @@
 import { Head, Link } from '@inertiajs/react';
-import { Button } from "@/components/ui/button";
-import { Printer, ArrowLeft, Home } from 'lucide-react';
+import { ArrowLeft, Home } from 'lucide-react';
 import { type PageProps } from '@inertiajs/core';
 import AppLayout from '@/layouts/app-layout';
 

@@ -5,8 +5,8 @@ import { type BreadcrumbItem } from '@/types';
 import { usePage } from '@inertiajs/react';
 import { PageProps } from '@inertiajs/core';
 import { useForm } from '@inertiajs/react';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Plus, List, BarChart, User, LogOut } from 'lucide-react';
+import { Card, CardContent, CardTitle, CardDescription } from '@/components/ui/card';
+import { Plus, List, LogOut } from 'lucide-react';
 import { Link } from '@inertiajs/react';
 
 interface Props extends PageProps {
