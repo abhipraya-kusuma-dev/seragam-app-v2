@@ -6,7 +6,8 @@ use App\Http\Controllers\Controller;
 use App\Models\Item;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
-use Maatwebsite\Excel\Facades\Excel;
+use Maatwebsite\Excel\Facades\Excel as ExcelWithFacade;
+use Maatwebsite\Excel\Excel as ExcelNoFacade;
 use Maatwebsite\Excel\Concerns\ToCollection;
 use Maatwebsite\Excel\Concerns\WithHeadingRow;
 use Illuminate\Support\Facades\DB;
@@ -40,7 +41,7 @@ class ItemsController extends Controller
             'jenjang' => $request->jenjang,
             'jenis_kelamin' => $request->jenis_kelamin
         ]);
-    
+
 
         return Inertia('AdminGudang/Items/Index', [
             'items' => $items,
@@ -50,9 +51,14 @@ class ItemsController extends Controller
                 'search' => $request->search,
             ],
             'jenjangOptions' => [
-                'SDIT', 'SMP', 'SMA', 'SMK', 
-                'SMP-SMA-SMK', 'SD-SMP-SMA', 
-                'SMA-SMK', 'SD-SMP-SMA-SMK'
+                'SDIT',
+                'SMP',
+                'SMA',
+                'SMK',
+                'SMP-SMA-SMK',
+                'SD-SMP-SMA',
+                'SMA-SMK',
+                'SD-SMP-SMA-SMK'
             ],
             'jenisKelaminOptions' => ['Pria', 'Wanita', 'UNI'],
             'templateUrl' => route('admin-gudang.items.template'),
@@ -65,7 +71,7 @@ class ItemsController extends Controller
             abort(403, 'Unauthorized');
         }
 
-        return Excel::download(new ItemTemplateExport, 'template_stok.xlsx');
+        return ExcelWithFacade::download(new ItemTemplateExport, 'template_stok.xlsx');
     }
 
     public function create(Request $request)
@@ -76,9 +82,14 @@ class ItemsController extends Controller
 
         return inertia('AdminGudang/Items/Create', [
             'jenjangOptions' => [
-                'SDIT', 'SMP', 'SMA', 'SMK', 
-                'SMP-SMA-SMK', 'SD-SMP-SMA', 
-                'SMA-SMK', 'SD-SMP-SMA-SMK'
+                'SDIT',
+                'SMP',
+                'SMA',
+                'SMK',
+                'SMP-SMA-SMK',
+                'SD-SMP-SMA',
+                'SMA-SMK',
+                'SD-SMP-SMA-SMK'
             ],
             'jenisKelaminOptions' => ['Pria', 'Wanita', 'UNI'],
         ]);
@@ -117,7 +128,7 @@ class ItemsController extends Controller
             ->with('success', 'Item berhasil ditambahkan');
     }
 
-    public function import(Request $request, Excel $excel)
+    public function import(Request $request, ExcelNoFacade $excel)
     {
         if (!$request->user() || $request->user()->role !== 'admin_gudang') {
             abort(403, 'Unauthorized');
@@ -146,13 +157,13 @@ class ItemsController extends Controller
 
                             // Convert nama_item to lowercase
                             $namaItem = strtolower($row['nama_item']);
-                            
+
                             // Check if item already exists with all four attributes (case-insensitive for nama_item)
                             $exists = Item::whereRaw('LOWER(nama_item) = ?', [$namaItem])
-                                        ->where('jenjang', $row['jenjang'])
-                                        ->where('jenis_kelamin', $row['jenis_kelamin'])
-                                        ->where('size', $row['size'])
-                                        ->exists();
+                                ->where('jenjang', $row['jenjang'])
+                                ->where('jenis_kelamin', $row['jenis_kelamin'])
+                                ->where('size', $row['size'])
+                                ->exists();
 
                             if (!$exists) {
                                 Item::create([
@@ -166,15 +177,15 @@ class ItemsController extends Controller
                                 $skippedCount++;
                             }
                         }
-                        
+
                         DB::commit();
-                        
+
                         // Add success message with counts
                         session()->flash('import_result', [
                             'created' => $createdCount,
                             'skipped' => $skippedCount
                         ]);
-                        
+
                     } catch (\Exception $e) {
                         DB::rollBack();
                         throw $e;

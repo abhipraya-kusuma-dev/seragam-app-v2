@@ -3,8 +3,8 @@ import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Plus, Minus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Toaster, toast } from 'sonner';
-import { useState, useRef } from 'react';
+import { toast } from 'sonner';
+import { useRef } from 'react';
 import { ArrowLeft } from 'lucide-react';
 import { Link } from '@inertiajs/react';
 import AppLayout from '@/layouts/app-layout';
@@ -23,10 +23,7 @@ interface Props {
 }
 
 const StockShow = ({ item }: Props) => {
-    const [isLoading, setIsLoading] = useState(false);
-    const [localQty, setLocalQty] = useState(item.stock?.qty || 0);
-    const { setData, put } = useForm({
-        item_id: item.id,
+    const { data, setData, put, processing } = useForm({
         qty: item.stock?.qty || 0,
     });
     const inputRef = useRef<HTMLInputElement>(null);
@@ -38,32 +35,28 @@ const StockShow = ({ item }: Props) => {
         });
     };
 
-    const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
-        setIsLoading(true);
-        
-        try {
-            // Update form data with current local quantity
-            setData('qty', localQty);
-            await put(`/admin/gudang/items/${item.id}/stock`);
-            toast.success( 'Berhasil', {
-                description: 'Stok berhasil diperbarui',
-            });
-        // eslint-disable-next-line @typescript-eslint/no-unused-vars
-        } catch (error) {
-            toast.error('Gagal', {
-                description: 'Gagal memperbarui stok',
-            });
-        } finally {
-            setIsLoading(false);
-        }
+        // The 'data' object is already up-to-date, no need to call setData here.
+        put(`/admin/gudang/items/${item.id}/stock`, {
+            onSuccess: () => {
+                toast.success('Berhasil', {
+                    description: 'Stok berhasil diperbarui',
+                });
+            },
+            onError: () => {
+                toast.error('Gagal', {
+                    description: 'Gagal memperbarui stok',
+                });
+            },
+        });
     };
 
     return (
         <AppLayout>
             <div className="container mx-auto py-8">
                 <Head title={`Stok - ${item.nama_item}`} />
-                
+
                 <div className="flex justify-between items-center mb-6">
                     <div className="flex gap-4">
                         <Link href="/admin/gudang/items" className="btn btn-ghost flex items-center px-4 py-2 border rounded-sm hover:bg-muted/50 transition-colors">
@@ -88,20 +81,22 @@ const StockShow = ({ item }: Props) => {
                                             size="sm"
                                             type="button"
                                             onClick={() => {
-                                                const newValue = Math.max(0, localQty - 1);
-                                                setLocalQty(newValue);
+                                                // Directly update the form state
+                                                setData('qty', Math.max(0, data.qty - 1));
                                             }}
-                                            disabled={localQty === 0}
+                                            disabled={data.qty === 0}
                                         >
                                             <Minus className="w-4 h-4" />
                                         </Button>
                                         <Input
                                             type="text"
                                             ref={inputRef}
-                                            value={localQty}
+                                            // Read value directly from form state
+                                            value={data.qty}
                                             onChange={(e) => {
+                                                // Directly update the form state
                                                 const value = parseInt(e.target.value) || 0;
-                                                setLocalQty(Math.max(0, value));
+                                                setData('qty', Math.max(0, value));
                                             }}
                                             className="w-24 text-center"
                                             placeholder="0"
@@ -111,8 +106,8 @@ const StockShow = ({ item }: Props) => {
                                             size="sm"
                                             type="button"
                                             onClick={() => {
-                                                const newValue = localQty + 1;
-                                                setLocalQty(newValue);
+                                                // Directly update the form state
+                                                setData('qty', data.qty + 1);
                                             }}
                                         >
                                             <Plus className="w-4 h-4" />
@@ -124,19 +119,18 @@ const StockShow = ({ item }: Props) => {
                             <div className="flex justify-end">
                                 <Button 
                                     type="submit" 
-                                    disabled={isLoading}
+                                    disabled={processing} // Use 'processing' from useForm
                                     className="bg-primary hover:bg-primary/90"
                                 >
-                                    {isLoading ? 'Memperbarui...' : 'Simpan Perubahan'}
+                                    {processing ? 'Memperbarui...' : 'Simpan Perubahan'}
                                 </Button>
                             </div>
                         </form>
                     </div>
                 </Card>
-                <Toaster />
             </div>
         </AppLayout>
     );
-}; 
+};
 
 export default StockShow;

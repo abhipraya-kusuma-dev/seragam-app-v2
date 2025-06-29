@@ -35,15 +35,11 @@ class StockController extends Controller
             'qty' => 'required|integer|min:0',
         ]);
 
-        $stock = $item->stock()->firstOrCreate([
-            'item_id' => $item->id,
-        ], [
-            'qty' => 0,
-        ]);
-
-        $stock->update([
-            'qty' => $validated['qty'],
-        ]);
+        // Efficiently update the existing stock or create a new one if it doesn't exist.
+        $item->stock()->updateOrCreate(
+            ['item_id' => $item->id], // Attributes to find the record by
+            ['qty' => $validated['qty']]  // Attributes to update with or create with
+        );
 
         return redirect()->back()->with('success', 'Stok berhasil diperbarui');
     }

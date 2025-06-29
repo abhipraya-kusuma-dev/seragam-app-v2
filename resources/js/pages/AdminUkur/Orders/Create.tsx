@@ -68,9 +68,9 @@ export default function CreateOrder({ items, jenjangOptions, jenisKelaminOptions
         'NewOrderNumber',
         (event: { nextOrderId: number }) => {
             toast.info('Nomor Order Baru', {
-                description: `ORD-${(event.nextOrderId).toString().padStart(5, '0')}`,
+                description: `ORD-${(event.nextOrderId + 1).toString().padStart(5, '0')}`,
             });
-            setCurrentNextOrderId(event.nextOrderId);
+            setCurrentNextOrderId(event.nextOrderId + 1);
         }
     );
 
