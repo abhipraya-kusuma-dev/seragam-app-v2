@@ -13,7 +13,7 @@ These instructions will get you a copy of the project up and running on your loc
 
 1.  **Clone the repository:**
     ```bash
-    git clone [https://github.com/abhipraya-kusuma-dev/seragam-app-v2](https://github.com/abhipraya-kusuma-dev/seragam-app-v2)
+    git clone https://github.com/abhipraya-kusuma-dev/seragam-app-v2
     cd seragam-app-v2
     ```
 
