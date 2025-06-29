@@ -12,19 +12,19 @@ class AdminSeeder extends Seeder
     {
         User::create([
             'username' => 'admin_ukur',
-            'password' => Hash::make('password'),
+            'password' => Hash::make('pwadminukur'),
             'role' => 'admin_ukur'
         ]);
 
         User::create([
             'username' => 'admin_gudang',
-            'password' => Hash::make('password'),
+            'password' => Hash::make('pwadmingudang'),
             'role' => 'admin_gudang'
         ]);
 
         User::create([
             'username' => 'admin_qc',
-            'password' => Hash::make('password'),
+            'password' => Hash::make('pwadminqc'),
             'role' => 'admin_qc'
         ]);
     }

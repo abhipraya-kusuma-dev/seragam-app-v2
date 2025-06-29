@@ -12,7 +12,7 @@ configureEcho({
 
 // Configure Inertia
 createInertiaApp({
-    title: (title) => `${title} - ${import.meta.env.VITE_APP_NAME || 'Laravel'}`,
+    title: (title) => `${title} - ${'Seragam App'}`,
     resolve: (name) => resolvePageComponent(`./pages/${name}.tsx`, import.meta.glob('./pages/**/*.tsx')),
     setup({ el, App, props }) {
         const root = createRoot(el);
