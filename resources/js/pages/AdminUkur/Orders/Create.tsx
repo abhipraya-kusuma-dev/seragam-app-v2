@@ -6,20 +6,21 @@ import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Card } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
-import { Plus, Trash2, ArrowLeft, Home, Minus } from 'lucide-react'; 
+import { Plus, Trash2, ArrowLeft, Home, Minus } from 'lucide-react';
 import { type PageProps } from '@inertiajs/core';
 import { toast } from 'sonner';
 import AppLayout from '@/layouts/app-layout';
 import { useEcho } from '@laravel/echo-react';
 
-// [CATATAN] Semua interface lokal Anda dipertahankan sesuai permintaan.
+// --- INTERFACES ---
+
 interface Item {
     id: number;
     nama_item: string;
     jenjang: string;
     jenis_kelamin: string;
     size: string;
-    stock: number; // Tipe ini akan cocok dengan data dari controller Anda
+    stock: number;
 }
 
 interface SelectedItem extends Item {
@@ -31,8 +32,8 @@ interface OrderFormData {
     jenjang: string;
     jenis_kelamin: string;
     items: SelectedItem[];
-    //@ts-ignore
-    [key: string]: any;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    [key: string]: any
 }
 
 interface Props extends PageProps {
@@ -40,9 +41,12 @@ interface Props extends PageProps {
     jenjangOptions: string[];
     jenisKelaminOptions: string[];
     nextOrderId?: number;
-    //@ts-ignore
-    errors: any; // Menambahkan 'errors' ke props
+    // FIX: Typed `errors` as a Record of string keys to string values,
+    // which matches Inertia's validation error structure.
+    errors: Record<string, string>;
 }
+
+// --- HELPERS & COMPONENT ---
 
 const capitalizeWords = (str: string): string => {
     if (!str) return '';
@@ -58,15 +62,15 @@ export default function CreateOrder({ items, jenjangOptions, jenisKelaminOptions
     });
     const [search, setSearch] = useState('');
     const [currentNextOrderId, setCurrentNextOrderId] = useState<number | undefined>(nextOrderId);
-    
+
     useEcho(
         'ukur',
         'NewOrderNumber',
         (event: { nextOrderId: number }) => {
             toast.info('Nomor Order Baru', {
-                description: `ORD-${(event.nextOrderId + 1).toString().padStart(5, '0')}`,
+                description: `ORD-${(event.nextOrderId).toString().padStart(5, '0')}`,
             });
-            setCurrentNextOrderId(event.nextOrderId + 1);
+            setCurrentNextOrderId(event.nextOrderId);
         }
     );
 
@@ -74,7 +78,6 @@ export default function CreateOrder({ items, jenjangOptions, jenisKelaminOptions
         return currentNextOrderId ? `ORD-${currentNextOrderId.toString().padStart(5, '0')}` : 'ORD-XXXXX';
     }, [currentNextOrderId]);
     
-    // [LOGIKA ASLI ANDA] Filter dipertahankan.
     const filteredItemsMemo = useMemo(() => {
         if (!data.jenjang || !data.jenis_kelamin) return [];
         let filtered = [...items];
@@ -86,7 +89,7 @@ export default function CreateOrder({ items, jenjangOptions, jenisKelaminOptions
         }
         if (search) {
             const searchLower = search.toLowerCase();
-            filtered = filtered.filter(item => 
+            filtered = filtered.filter(item =>
                 item.nama_item.toLowerCase().includes(searchLower) ||
                 item.size.toLowerCase().includes(searchLower)
             );
@@ -249,5 +252,3 @@ export default function CreateOrder({ items, jenjangOptions, jenisKelaminOptions
         </AppLayout>
     );
 };
-
-

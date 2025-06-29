@@ -9,46 +9,53 @@ import { type PageProps, type Order, type BreadcrumbItem } from '@/types';
 // Komponen "tak terlihat" yang hanya bertugas mendengarkan event.
 function RealtimeNotificationHandler() {
     const { auth } = usePage<PageProps>().props;
-    if(auth.user?.role === 'admin_gudang') {
-        useEcho(
-            'gudang',
-            'NewOrderCreated',
-            (event: {order: Order}) => {
+    
+    useEcho(
+        'gudang',
+        'NewOrderCreated',
+        (event: {order: Order}) => {
+            if(auth.user?.role === 'admin_gudang') {
                 toast.info('Ada Order yang baru dibuar', {
                     description: `Order #${event.order.order_number}`,
                 });           
             }
-        );
-        useEcho(
-            'gudang',
-            'OrderReturned',
-            (event: {order: Order}) => {
+        }
+    );
+    useEcho(
+        'gudang',
+        'OrderReturned',
+        (event: {order: Order}) => {
+            if(auth.user?.role === 'admin_gudang') {
                 toast.warning('Ada Order yang dikembalikan dari QC', {
-                description: `Order #${event.order.order_number}`,
+                    description: `Order #${event.order.order_number}`,
                 });
             }
-        );
-    } 
-    if(auth.user?.role === 'admin_qc') {    
-        useEcho(
-            'qc',
-            'OrderReaded',
-            (event: {order: Order}) => {
+        }
+    );
+
+
+    useEcho(
+        'qc',
+        'OrderReaded',
+        (event: {order: Order}) => {
+            if(auth.user?.role === 'admin_qc') {
                 toast.info('Ada Order yang baru masuk', {
-                description: `Order #${event.order.order_number}`,
+                    description: `Order #${event.order.order_number}`,
                 });
             }
-        );
-        useEcho(
-            'qc',
-            'OrderReturnedBack',
-            (event: {order: Order}) => {
+        }
+    );
+    useEcho(
+        'qc',
+        'OrderReturnedBack',
+        (event: {order: Order}) => {
+            if(auth.user?.role === 'admin_qc') {
                 toast.warning('Ada Order yang dikembalikan dari Gudang', {
-                description: `Order #${event.order.order_number}`,
+                    description: `Order #${event.order.order_number}`,
                 });
             }
-        );
-    }
+        }
+    );
 
     // TODO: Tambahkan listener untuk alur lain di sini nanti
     // (misalnya, notifikasi dari Gudang ke QC)

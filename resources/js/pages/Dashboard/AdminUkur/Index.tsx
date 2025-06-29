@@ -1,7 +1,6 @@
 import { Head } from '@inertiajs/react';
 import { Button } from '@/components/ui/button';
 import AppLayout from '@/layouts/app-layout';
-import { type BreadcrumbItem } from '@/types';
 import { usePage } from '@inertiajs/react';
 import { PageProps } from '@inertiajs/core';
 import { useForm } from '@inertiajs/react';

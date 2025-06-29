@@ -190,6 +190,7 @@ export default function QualityCheckModal({ isOpen, onClose, order }: QualityChe
   };
 
   // Get maximum quantity for "Maksimal" button
+   
   const getMaximalQty = (item: OrderItem) => {
     return getMaxAllowedQty(item);
   };

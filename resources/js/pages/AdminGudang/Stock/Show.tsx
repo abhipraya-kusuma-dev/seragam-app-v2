@@ -49,6 +49,7 @@ const StockShow = ({ item }: Props) => {
             toast.success( 'Berhasil', {
                 description: 'Stok berhasil diperbarui',
             });
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
         } catch (error) {
             toast.error('Gagal', {
                 description: 'Gagal memperbarui stok',

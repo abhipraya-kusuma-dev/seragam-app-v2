@@ -1,11 +1,11 @@
 import { Head } from '@inertiajs/react';
+import { PageProps, router } from '@inertiajs/core'; 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import AppLayout from '@/layouts/app-layout';
-import { PageProps, router } from '@inertiajs/core';
 import { useForm } from '@inertiajs/react';
 import { debounce } from 'lodash';
 import {
@@ -25,7 +25,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Label } from '@/components/ui/label';
 import { cn } from '@/lib/utils';
 import { useEcho } from '@laravel/echo-react';
-import { toast } from 'sonner'; // <-- Import toast for error handling
+import { toast } from 'sonner';
+
+// --- TYPE DEFINITIONS ---
 
 export interface Order {
     id: number;
@@ -65,6 +67,27 @@ export interface OrderItem {
     };
 }
 
+// Generic Paginator interface for Laravel's pagination response
+export interface Paginator<T> {
+    data: T[];
+    links: {
+        url: string | null;
+        label: string;
+        active: boolean;
+    }[];
+    current_page: number;
+    first_page_url: string;
+    from: number;
+    last_page: number;
+    last_page_url: string;
+    next_page_url: string | null;
+    path: string;
+    per_page: number;
+    prev_page_url: string | null;
+    to: number;
+    total: number;
+}
+
 interface Props extends PageProps {
     auth: {
         user: {
@@ -72,16 +95,11 @@ interface Props extends PageProps {
             role: string;
         };
     };
-    //@ts-expected-error
-    inProgressOrders?: any;
-    //@ts-expected-error
-    pendingOrders?: any;
-    //@ts-expected-error
-    completedOrders?: any;
-    //@ts-expected-error
-    returnedOrders?: any;
-    //@ts-expected-error
-    cancelledOrders?: any;
+    inProgressOrders?: Paginator<Order>;
+    pendingOrders?: Paginator<Order>;
+    completedOrders?: Paginator<Order>;
+    returnedOrders?: Paginator<Order>;
+    cancelledOrders?: Paginator<Order>;
     qcStats?: {
         inProgress: number;
         completed: number;
@@ -94,19 +112,21 @@ interface Props extends PageProps {
     };
 }
 
+// --- COMPONENT ---
+
 export default function AdminQcDashboard({
     auth,
-    inProgressOrders = null,
-    pendingOrders = null,
-    completedOrders = null,
-    returnedOrders = null,
-    cancelledOrders = null,
+    inProgressOrders,
+    pendingOrders,
+    completedOrders,
+    returnedOrders,
+    cancelledOrders,
     qcStats,
     filters = {}
 }: Props) {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
-    const [openingQcModalId, setOpeningQcModalId] = useState<number | null>(null); // <-- ADDED
+    const [openingQcModalId, setOpeningQcModalId] = useState<number | null>(null);
     const perPage = filters?.perPage || 10;
     const [activeTab, setActiveTab] = useState('in-progress');
     const [searchTerm, setSearchTerm] = useState('');
@@ -118,8 +138,8 @@ export default function AdminQcDashboard({
     useEcho(
         'qc',
         'OrderReaded',
-        //@ts-expected-error
-        (event: { order: Order }) => {
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        (_event: { order: Order }) => {
             if (auth.user?.role === 'admin_qc') {
                 router.reload({
                     only: ['inProgressOrders', 'qcStats'],
@@ -130,8 +150,8 @@ export default function AdminQcDashboard({
     useEcho(
         'qc',
         'OrderReturnedBack',
-        //@ts-expected-error
-        (event: { order: Order }) => {
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        (_event: { order: Order }) => {
             if (auth.user?.role === 'admin_qc') {
                 router.reload({
                     only: ['inProgressOrders', 'qcStats'],
@@ -144,7 +164,7 @@ export default function AdminQcDashboard({
         'TriggerPopupQc',
         (event: {orderNumber: string, modalState: boolean}) => {
             if (event.modalState) {
-                setActiveOrderNumbers(prev => 
+                setActiveOrderNumbers(prev =>
                     prev.includes(event.orderNumber) ? prev : [...prev, event.orderNumber]
                 );
             } else {
@@ -152,10 +172,9 @@ export default function AdminQcDashboard({
             }
         }
     );
-    // --- END of useEcho IMPLEMENTATION ---
 
+    // --- SIDE EFFECTS ---
     useEffect(() => {
-        // Using debounce to avoid sending a request on every keystroke
         const debouncedSearch = debounce(() => {
             router.get(
                 '/dashboard',
@@ -169,26 +188,22 @@ export default function AdminQcDashboard({
                 {
                     preserveState: true,
                     preserveScroll: true,
-                    replace: true, // Avoids polluting browser history
+                    replace: true,
                 }
             );
-        }, 300); // 300ms delay
-    
+        }, 300);
+
         debouncedSearch();
-    
-        // Cleanup function to cancel the debounce on component unmount
         return () => debouncedSearch.cancel();
-    
     }, [activeTab, searchTerm, jenjangFilter, genderFilter, perPage]);
 
+    // --- HANDLERS ---
     const handleOpenModal = async (order: Order) => {
-        setOpeningQcModalId(order.id); // <-- ADDED: Set loading state
+        setOpeningQcModalId(order.id);
         try {
             await fetch('/api/trigger/popup-qc-open', {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     orderNumber: order.order_number,
                     modalState: true
@@ -200,7 +215,7 @@ export default function AdminQcDashboard({
             console.error("Failed to open QC modal:", error);
             toast.error("Gagal membuka modal QC.");
         } finally {
-            setOpeningQcModalId(null); // <-- ADDED: Reset loading state
+            setOpeningQcModalId(null);
         }
     };
 
@@ -208,14 +223,12 @@ export default function AdminQcDashboard({
         if(selectedOrder){
             await fetch('/api/trigger/popup-qc-closed', {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     orderNumber: selectedOrder.order_number,
                     modalState: false
                 })
-            })
+            });
         }
         setIsModalOpen(false);
         setSelectedOrder(null);
@@ -227,6 +240,7 @@ export default function AdminQcDashboard({
 
     const logoutForm = useForm();
 
+    // --- HELPERS ---
     const formatTableDate = (dateString: string) => {
         return new Date(dateString).toLocaleDateString('id-ID', {
             day: '2-digit',
@@ -239,9 +253,8 @@ export default function AdminQcDashboard({
 
     const inProgressOrdersCount = qcStats?.inProgress || 0;
 
-    // Helper function to render pagination
-    //@ts-ignore
-    const renderPagination = (paginator: any, tabName: string) => {
+    // --- RENDER FUNCTIONS ---
+    const renderPagination = (paginator: Paginator<Order>) => {
         if (!paginator || paginator.data.length === 0) return null;
 
         const queryParams = {
@@ -252,110 +265,138 @@ export default function AdminQcDashboard({
             perPage: perPage
         };
 
+        const handlePageClick = (url: string | null) => {
+            if (url) {
+                router.get(url, queryParams, {
+                    preserveState: true,
+                    preserveScroll: true,
+                });
+            }
+        };
+
         return (
             <div className="mt-4 flex items-center justify-between">
                 <Pagination className="mt-0">
                     <PaginationContent>
                         <PaginationItem>
-                            {paginator.prev_page_url ? (
-                                <div
-                                    onClick={() => router.get(paginator.prev_page_url, queryParams, {
-                                        preserveState: true,
-                                        preserveScroll: true
-                                    })}
-                                    className={cn(
-                                        "inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors",
-                                        "border border-input hover:bg-accent hover:text-accent-foreground cursor-pointer",
-                                        "h-10 py-2 px-4"
-                                    )}
-                                >
-                                    <PaginationPrevious />
-                                </div>
-                            ) : (
-                                <span className={cn(
-                                    "inline-flex items-center justify-center rounded-md text-sm font-medium",
-                                    "border border-input opacity-50 cursor-not-allowed",
-                                    "h-10 py-2 px-4"
-                                )}>
-                                    <PaginationPrevious />
-                                </span>
-                            )}
+                            <PaginationPrevious
+                                onClick={() => handlePageClick(paginator.prev_page_url)}
+                                aria-disabled={!paginator.prev_page_url}
+                                className={!paginator.prev_page_url ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                            />
                         </PaginationItem>
 
                         {paginator.links
-                        //@ts-expected-error
-                            .filter((link: any) => !['&laquo; Previous', 'Next &raquo;'].includes(link.label))
-                        //@ts-expected-error
-                            .map((link: any, index: number) => {
-                                if (link.label === '...') {
-                                    return (
-                                        <PaginationItem key={index}>
-                                            <span className="px-3 py-1">...</span>
-                                        </PaginationItem>
-                                    );
-                                }
-
-                                return (
-                                    <PaginationItem key={index}>
-                                        {link.url ? (
-                                            <div
-                                                onClick={() => router.get(link.url, queryParams, {
-                                                    preserveState: true,
-                                                    preserveScroll: true
-                                                })}
-                                                className={cn(
-                                                    "inline-flex items-center justify-center rounded-md text-sm font-medium",
-                                                    "border border-input hover:bg-accent hover:text-accent-foreground cursor-pointer",
-                                                    "h-10 w-10",
-                                                    link.active && "bg-accent text-accent-foreground"
-                                                )}
-                                            >
-                                                {link.label}
-                                            </div>
-                                        ) : (
-                                            <span className={cn(
-                                                "inline-flex items-center justify-center rounded-md text-sm font-medium",
-                                                "border border-input opacity-50 cursor-not-allowed",
-                                                "h-10 w-10"
-                                            )}>
-                                                {link.label}
-                                            </span>
-                                        )}
-                                    </PaginationItem>
-                                );
-                            })}
+                            .filter(link => !['&laquo; Previous', 'Next &raquo;'].includes(link.label))
+                            .map((link, index) => (
+                                <PaginationItem key={index}>
+                                    {link.label === '...' ? (
+                                        <span className="px-3 py-1">...</span>
+                                    ) : (
+                                        <div
+                                            onClick={() => handlePageClick(link.url)}
+                                            className={cn(
+                                                "inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors h-10 w-10",
+                                                link.url ? "border border-input hover:bg-accent hover:text-accent-foreground cursor-pointer" : "opacity-50 cursor-not-allowed",
+                                                link.active && "bg-accent text-accent-foreground"
+                                            )}
+                                        >
+                                            {link.label}
+                                        </div>
+                                    )}
+                                </PaginationItem>
+                            ))}
 
                         <PaginationItem>
-                            {paginator.next_page_url ? (
-                                <div
-                                    onClick={() => router.get(paginator.next_page_url, queryParams, {
-                                        preserveState: true,
-                                        preserveScroll: true
-                                    })}
-                                    className={cn(
-                                        "inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors",
-                                        "border border-input hover:bg-accent hover:text-accent-foreground cursor-pointer",
-                                        "h-10 py-2 px-4"
-                                    )}
-                                >
-                                    <PaginationNext />
-                                </div>
-                            ) : (
-                                <span className={cn(
-                                    "inline-flex items-center justify-center rounded-md text-sm font-medium",
-                                    "border border-input opacity-50 cursor-not-allowed",
-                                    "h-10 py-2 px-4"
-                                )}>
-                                    <PaginationNext />
-                                </span>
-                            )}
+                            <PaginationNext
+                                onClick={() => handlePageClick(paginator.next_page_url)}
+                                aria-disabled={!paginator.next_page_url}
+                                className={!paginator.next_page_url ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                            />
                         </PaginationItem>
                     </PaginationContent>
                 </Pagination>
             </div>
         );
     };
+    
+    // Helper to render a table for a specific order type
+    const renderOrderTable = (
+        ordersPaginator: Paginator<Order> | undefined,
+        statusBadge: React.ReactNode,
+        title: string,
+        icon: React.ReactNode,
+        emptyState: { title: string, description: string }
+    ) => {
+        if (!ordersPaginator || ordersPaginator.data.length === 0) {
+            return (
+                <div className="text-center py-8">
+                    {icon}
+                    <h3 className="text-lg font-semibold mb-2">{emptyState.title}</h3>
+                    <p className="text-muted-foreground">{emptyState.description}</p>
+                </div>
+            );
+        }
 
+        const sortedOrders = [...ordersPaginator.data].sort((a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime());
+
+        return (
+            <>
+                <Table>
+                    <TableHeader>
+                        <TableRow>
+                            <TableHead>No. Order</TableHead>
+                            <TableHead>Nama Murid</TableHead>
+                            <TableHead>Jenjang</TableHead>
+                            <TableHead>Jenis Kelamin</TableHead>
+                            <TableHead>{title.includes("Selesai") ? "Tanggal Selesai" : "Tanggal Update"}</TableHead>
+                            <TableHead>Status</TableHead>
+                            {(title.includes("Diperiksa") || title.includes("Pending")) && <TableHead>Aksi</TableHead>}
+                        </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                        {sortedOrders.map((order) => (
+                            <TableRow key={order.id}>
+                                <TableCell className="font-medium">{order.order_number}</TableCell>
+                                <TableCell>{order.nama_murid}</TableCell>
+                                <TableCell>{order.jenjang}</TableCell>
+                                <TableCell>{order.jenis_kelamin}</TableCell>
+                                <TableCell>{formatTableDate(order.updated_at)}</TableCell>
+                                <TableCell>{statusBadge}</TableCell>
+                                {(title.includes("Diperiksa") || title.includes("Pending")) && (
+                                    <TableCell>
+                                        <div className="flex gap-2">
+                                            <Button
+                                                size="sm"
+                                                onClick={() => handleOpenModal(order)}
+                                                className="flex items-center gap-1"
+                                                disabled={activeOrderNumbers.includes(order.order_number) || openingQcModalId === order.id}
+                                            >
+                                                {openingQcModalId === order.id ? (
+                                                    <svg className="animate-spin h-4 w-4 text-current" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                                    </svg>
+                                                ) : (
+                                                    <>
+                                                        <ClipboardCheck className="w-4 h-4" /> Periksa
+                                                    </>
+                                                )}
+                                            </Button>
+                                        </div>
+                                    </TableCell>
+                                )}
+                            </TableRow>
+                        ))}
+                    </TableBody>
+                </Table>
+                {renderPagination(ordersPaginator)}
+            </>
+        );
+    };
+
+
+    // --- JSX ---
     return (
         <AppLayout>
             <Head title="Dashboard Admin QC" />
@@ -376,7 +417,7 @@ export default function AdminQcDashboard({
                                 });
                             }}
                         >
-                            <LogOut className="w-4 h-4" />
+                            <LogOut className="w-4 h-4 mr-2" />
                             Keluar
                         </Button>
                     </div>
@@ -391,15 +432,12 @@ export default function AdminQcDashboard({
                         </CardHeader>
                         <CardContent>
                             <div className="text-2xl font-bold">{inProgressOrdersCount}</div>
-                            <p className="text-xs text-muted-foreground">
-                                Order yang sedang diproses
-                            </p>
+                            <p className="text-xs text-muted-foreground">Order yang sedang diproses</p>
                         </CardContent>
                     </Card>
-
                     <Card>
                         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                            <CardTitle className="text-sm font-medium">Order Selesai / Pending</CardTitle>
+                            <CardTitle className="text-sm font-medium">Selesai / Pending</CardTitle>
                             <div className="flex items-center gap-2">
                                 <CheckCircle className="h-4 w-4 text-green-600" /> /
                                 <Clock className="h-4 w-4 text-orange-600" />
@@ -410,12 +448,9 @@ export default function AdminQcDashboard({
                                 <div className="text-2xl font-bold">{qcStats?.completed || 0}</div> /
                                 <div className="text-2xl font-bold">{qcStats?.pending || 0}</div>
                             </div>
-                            <p className="text-xs text-muted-foreground">
-                                Order selesai / Order Pending
-                            </p>
+                            <p className="text-xs text-muted-foreground">Order selesai / Order Pending</p>
                         </CardContent>
                     </Card>
-
                     <Card>
                         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                             <CardTitle className="text-sm font-medium">Order Dikembalikan</CardTitle>
@@ -423,59 +458,52 @@ export default function AdminQcDashboard({
                         </CardHeader>
                         <CardContent>
                             <div className="text-2xl font-bold">{qcStats?.returned || 0}</div>
-                            <p className="text-xs text-muted-foreground">
-                                Order dikembalikan
-                            </p>
+                            <p className="text-xs text-muted-foreground">Order yang dikembalikan</p>
                         </CardContent>
                     </Card>
-
-                    <Card>
+                     <Card>
                         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                             <CardTitle className="text-sm font-medium">Order Dibatalkan</CardTitle>
                             <XCircle className="h-4 w-4 text-red-600" />
                         </CardHeader>
                         <CardContent>
                             <div className="text-2xl font-bold">{qcStats?.cancelled || 0}</div>
-                            <p className="text-xs text-muted-foreground">
-                                Order Dibatalkan
-                            </p>
+                            <p className="text-xs text-muted-foreground">Order yang dibatalkan</p>
                         </CardContent>
                     </Card>
                 </div>
-
+                
                 {/* Main Content Tabs */}
                 <Tabs defaultValue="in-progress" className="space-y-6" onValueChange={handleTabChange}>
                     <TabsList className="grid w-full grid-cols-5">
-                        <TabsTrigger value="in-progress" className="flex items-center gap-2">
-                            <ClipboardCheck className="w-4 h-4" />
-                            Order Perlu Diperiksa ({inProgressOrders?.total || 0})
-                        </TabsTrigger>
-                        <TabsTrigger value="completed" className="flex items-center gap-2">
-                            <CheckCircle className="w-4 h-4" />
-                            Order Selesai ({completedOrders?.total || 0})
-                        </TabsTrigger>
-                        <TabsTrigger value="pending" className="flex items-center gap-2">
-                            <Package className="w-4 h-4" />
-                            Order Pending ({pendingOrders?.total || 0})
-                        </TabsTrigger>
-                        <TabsTrigger value="returned" className="flex items-center gap-2">
-                            <XCircle className="w-4 h-4" />
-                            Order Dikembalikan ({returnedOrders?.total || 0})
-                        </TabsTrigger>
-                        <TabsTrigger value="cancelled" className="flex items-center gap-2">
-                            <XCircle className="w-4 h-4" />
-                            Order Dibatalkan ({cancelledOrders?.total || 0})
-                        </TabsTrigger>
+                         <TabsTrigger value="in-progress" className="flex items-center gap-2">
+                             <ClipboardCheck className="w-4 h-4" />
+                             Perlu Diperiksa ({inProgressOrders?.total || 0})
+                         </TabsTrigger>
+                         <TabsTrigger value="completed" className="flex items-center gap-2">
+                             <CheckCircle className="w-4 h-4" />
+                             Selesai ({completedOrders?.total || 0})
+                         </TabsTrigger>
+                         <TabsTrigger value="pending" className="flex items-center gap-2">
+                             <Package className="w-4 h-4" />
+                             Pending ({pendingOrders?.total || 0})
+                         </TabsTrigger>
+                         <TabsTrigger value="returned" className="flex items-center gap-2">
+                             <RotateCcw className="w-4 h-4" />
+                             Dikembalikan ({returnedOrders?.total || 0})
+                         </TabsTrigger>
+                         <TabsTrigger value="cancelled" className="flex items-center gap-2">
+                             <XCircle className="w-4 h-4" />
+                             Dibatalkan ({cancelledOrders?.total || 0})
+                         </TabsTrigger>
                     </TabsList>
 
                     {/* Filter Section */}
                     <Card className="shadow-sm">
-                        <CardContent>
+                        <CardContent className="pt-6">
                             <div className="flex flex-wrap gap-6 items-end">
                                 <div className="flex-1 min-w-[200px] space-y-2">
-                                    <Label htmlFor="search-input" className="text-sm font-medium">
-                                        Cari Order/Murid
-                                    </Label>
+                                    <Label htmlFor="search-input" className="text-sm font-medium">Cari Order/Murid</Label>
                                     <Input
                                         id="search-input"
                                         type="text"
@@ -485,374 +513,134 @@ export default function AdminQcDashboard({
                                         className="w-full"
                                     />
                                 </div>
-
                                 <div className="w-40 space-y-2">
-                                    <Label className="text-sm font-medium">Jenjang</Label>
-                                    <Select value={jenjangFilter || undefined} onValueChange={(value) => setJenjangFilter(value || '')}>
-                                        <SelectTrigger className="w-full">
-                                            <SelectValue placeholder="Semua Jenjang" />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            <SelectItem value="all">Semua Jenjang</SelectItem>
-                                            <SelectItem value="SD">SD</SelectItem>
-                                            <SelectItem value="SMP">SMP</SelectItem>
-                                            <SelectItem value="SMA">SMA</SelectItem>
-                                            <SelectItem value="SMK">SMK</SelectItem>
-                                        </SelectContent>
-                                    </Select>
-                                </div>
-
-                                <div className="w-40 space-y-2">
-                                    <Label className="text-sm font-medium">Jenis Kelamin</Label>
-                                    <Select value={genderFilter || undefined} onValueChange={(value) => setGenderFilter(value || '')}>
-                                        <SelectTrigger className="w-full">
-                                            <SelectValue placeholder="Semua" />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            <SelectItem value="all">Semua</SelectItem>
-                                            <SelectItem value="Pria">Pria</SelectItem>
-                                            <SelectItem value="Wanita">Wanita</SelectItem>
-                                        </SelectContent>
-                                    </Select>
-                                </div>
+                                     <Label className="text-sm font-medium">Jenjang</Label>
+                                     <Select value={jenjangFilter || undefined} onValueChange={(value) => setJenjangFilter(value === 'all' ? '' : value)}>
+                                         <SelectTrigger className="w-full">
+                                             <SelectValue placeholder="Semua Jenjang" />
+                                         </SelectTrigger>
+                                         <SelectContent>
+                                             <SelectItem value="all">Semua Jenjang</SelectItem>
+                                             <SelectItem value="SD">SD</SelectItem>
+                                             <SelectItem value="SMP">SMP</SelectItem>
+                                             <SelectItem value="SMA">SMA</SelectItem>
+                                             <SelectItem value="SMK">SMK</SelectItem>
+                                         </SelectContent>
+                                     </Select>
+                                 </div>
+                                 <div className="w-40 space-y-2">
+                                     <Label className="text-sm font-medium">Jenis Kelamin</Label>
+                                     <Select value={genderFilter || undefined} onValueChange={(value) => setGenderFilter(value === 'all' ? '' : value)}>
+                                         <SelectTrigger className="w-full">
+                                             <SelectValue placeholder="Semua" />
+                                         </SelectTrigger>
+                                         <SelectContent>
+                                             <SelectItem value="all">Semua</SelectItem>
+                                             <SelectItem value="Pria">Pria</SelectItem>
+                                             <SelectItem value="Wanita">Wanita</SelectItem>
+                                         </SelectContent>
+                                     </Select>
+                                 </div>
                             </div>
                         </CardContent>
                     </Card>
-
-                    {/* Order Perlu Diperiksa Tab */}
+                    
+                    {/* Tab Content Panels */}
                     <TabsContent value="in-progress">
                         <Card>
                             <CardHeader>
                                 <CardTitle className="flex items-center gap-2">
-                                    <ClipboardCheck className="w-5 h-5" />
-                                    Order Perlu Diperiksa ({inProgressOrders?.data?.length || 0})
+                                    <ClipboardCheck className="w-5 h-5" /> Order Perlu Diperiksa
                                 </CardTitle>
-                                <p className="text-sm text-muted-foreground">
-                                    Daftar order yang perlu di-QC
-                                </p>
+                                <p className="text-sm text-muted-foreground">Daftar order yang perlu di-QC.</p>
                             </CardHeader>
                             <CardContent>
-                                {inProgressOrders?.data?.length > 0 ? (
-                                    <>
-                                        <Table>
-                                            <TableHeader>
-                                                <TableRow>
-                                                    <TableHead>No. Order</TableHead>
-                                                    <TableHead>Nama Murid</TableHead>
-                                                    <TableHead>Jenjang</TableHead>
-                                                    <TableHead>Jenis Kelamin</TableHead>
-                                                    <TableHead>Tanggal Order</TableHead>
-                                                    <TableHead>Status</TableHead>
-                                                    <TableHead>Aksi</TableHead>
-                                                </TableRow>
-                                            </TableHeader>
-                                            <TableBody>
-                                                {inProgressOrders.data
-                                                    .sort((a: Order, b: Order) =>
-                                                        new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
-                                                    )
-                                                    .map((order: Order) => (
-                                                        <TableRow key={order.id}>
-                                                            <TableCell className="font-medium">{order.order_number}</TableCell>
-                                                            <TableCell>{order.nama_murid}</TableCell>
-                                                            <TableCell>{order.jenjang}</TableCell>
-                                                            <TableCell>{order.jenis_kelamin}</TableCell>
-                                                            <TableCell>
-                                                                {formatTableDate(order.created_at)}
-                                                            </TableCell>
-                                                            <TableCell>
-                                                                <Badge variant="secondary" className="bg-blue-100 text-blue-800">Sedang Diproses</Badge>
-                                                            </TableCell>
-                                                            <TableCell>
-                                                                <div className="flex gap-2">
-                                                                    <Button
-                                                                        size="sm"
-                                                                        onClick={() => handleOpenModal(order)}
-                                                                        className="flex items-center gap-1"
-                                                                        disabled={activeOrderNumbers.includes(order.order_number) || openingQcModalId === order.id}
-                                                                    >
-                                                                        {openingQcModalId === order.id ? (
-                                                                            <>
-                                                                                <svg className="animate-spin h-4 w-4 text-current" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                                                                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                                                                                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                                                                                </svg>
-                                                                            </>
-                                                                        ) : (
-                                                                            <>
-                                                                                <ClipboardCheck className="w-4 h-4" />
-                                                                                Periksa
-                                                                            </>
-                                                                        )}
-                                                                    </Button>
-                                                                </div>
-                                                            </TableCell>
-                                                        </TableRow>
-                                                    ))}
-                                            </TableBody>
-                                        </Table>
-                                        {renderPagination(inProgressOrders, 'inProgressPage')}
-                                    </>
-                                ) : (
-                                    <div className="text-center py-8">
-                                        <ClipboardCheck className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-                                        <h3 className="text-lg font-semibold mb-2">Tidak ada order yang perlu di-QC</h3>
-                                        <p className="text-muted-foreground">Semua order sudah selesai di-QC atau belum ada order baru</p>
-                                    </div>
+                                {renderOrderTable(
+                                    inProgressOrders,
+                                    <Badge variant="secondary" className="bg-blue-100 text-blue-800">Sedang Diproses</Badge>,
+                                    "Order Perlu Diperiksa",
+                                    <ClipboardCheck className="w-12 h-12 text-muted-foreground mx-auto mb-4" />,
+                                    { title: "Tidak ada order untuk diperiksa", description: "Semua order sudah selesai di-QC atau belum ada order baru." }
                                 )}
                             </CardContent>
                         </Card>
                     </TabsContent>
-
-                    {/* Order Selesai Tab */}
+                    
                     <TabsContent value="completed">
-                        <Card>
+                         <Card>
                             <CardHeader>
                                 <CardTitle className="flex items-center gap-2">
-                                    <CheckCircle className="w-5 h-5 text-green-600" />
-                                    Order Selesai ({completedOrders?.data?.length || 0})
+                                    <CheckCircle className="w-5 h-5 text-green-600" /> Order Selesai
                                 </CardTitle>
-                                <p className="text-sm text-muted-foreground">
-                                    Riwayat order yang sudah berhasil melewati proses quality control
-                                </p>
+                                <p className="text-sm text-muted-foreground">Riwayat order yang berhasil melewati proses quality control.</p>
                             </CardHeader>
                             <CardContent>
-                                {completedOrders?.data?.length > 0 ? (
-                                    <>
-                                        <Table>
-                                            <TableHeader>
-                                                <TableRow>
-                                                    <TableHead>No. Order</TableHead>
-                                                    <TableHead>Nama Murid</TableHead>
-                                                    <TableHead>Jenjang</TableHead>
-                                                    <TableHead>Jenis Kelamin</TableHead>
-                                                    <TableHead>Tanggal Selesai</TableHead>
-                                                    <TableHead>Status</TableHead>
-                                                </TableRow>
-                                            </TableHeader>
-                                            <TableBody>
-                                                {completedOrders.data
-                                                    .sort((a: Order, b: Order) =>
-                                                        new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime()
-                                                    )
-                                                    .map((order: Order) => (
-                                                        <TableRow key={order.id}>
-                                                            <TableCell>{order.order_number}</TableCell>
-                                                            <TableCell>{order.nama_murid}</TableCell>
-                                                            <TableCell>{order.jenjang}</TableCell>
-                                                            <TableCell>{order.jenis_kelamin}</TableCell>
-                                                            <TableCell>
-                                                                {formatTableDate(order.updated_at)}
-                                                            </TableCell>
-                                                            <TableCell>
-                                                                <Badge variant="default" className="bg-green-100 text-green-800">Selesai</Badge>
-                                                            </TableCell>
-                                                        </TableRow>
-                                                    ))}
-                                            </TableBody>
-                                        </Table>
-                                        {renderPagination(completedOrders, 'completedPage')}
-                                    </>
-                                ) : (
-                                    <div className="text-center py-8">
-                                        <CheckCircle className="w-12 h-12 text-green-600 mx-auto mb-4" />
-                                        <h3 className="text-lg font-semibold mb-2">Belum ada order yang selesai</h3>
-                                        <p className="text-muted-foreground">Order yang sudah di-QC akan muncul di sini</p>
-                                    </div>
+                                {renderOrderTable(
+                                    completedOrders,
+                                    <Badge variant="default" className="bg-green-100 text-green-800">Selesai</Badge>,
+                                    "Order Selesai",
+                                    <CheckCircle className="w-12 h-12 text-green-600 mx-auto mb-4" />,
+                                    { title: "Belum ada order yang selesai", description: "Order yang sudah di-QC akan muncul di sini." }
                                 )}
                             </CardContent>
                         </Card>
                     </TabsContent>
 
-                    {/* Order Pending Tab */}
                     <TabsContent value="pending">
-                        <Card>
+                         <Card>
                             <CardHeader>
                                 <CardTitle className="flex items-center gap-2">
-                                    <Clock className="w-5 h-5 text-orange-600" />
-                                    Order Pending ({pendingOrders?.data?.length || 0})
+                                    <Clock className="w-5 h-5 text-orange-600" /> Order Pending
                                 </CardTitle>
-                                <p className="text-sm text-muted-foreground">
-                                    Order yang sedang menunggu pemeriksaan
-                                </p>
+                                <p className="text-sm text-muted-foreground">Order yang sedang menunggu pemeriksaan stok.</p>
                             </CardHeader>
                             <CardContent>
-                                {pendingOrders?.data?.length > 0 ? (
-                                    <>
-                                        <Table>
-                                            <TableHeader>
-                                                <TableRow>
-                                                    <TableHead>No. Order</TableHead>
-                                                    <TableHead>Nama Murid</TableHead>
-                                                    <TableHead>Jenjang</TableHead>
-                                                    <TableHead>Jenis Kelamin</TableHead>
-                                                    <TableHead>Tanggal Pending</TableHead>
-                                                    <TableHead>Status</TableHead>
-                                                    <TableHead>Aksi</TableHead>
-                                                </TableRow>
-                                            </TableHeader>
-                                            <TableBody>
-                                                {pendingOrders.data
-                                                    .sort((a: Order, b: Order) =>
-                                                        new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime()
-                                                    )
-                                                    .map((order: Order) => (
-                                                        <TableRow key={order.id}>
-                                                            <TableCell>{order.order_number}</TableCell>
-                                                            <TableCell>{order.nama_murid}</TableCell>
-                                                            <TableCell>{order.jenjang}</TableCell>
-                                                            <TableCell>{order.jenis_kelamin}</TableCell>
-                                                            <TableCell>
-                                                                {formatTableDate(order.updated_at)}
-                                                            </TableCell>
-                                                            <TableCell>
-                                                                <Badge variant="default" className="bg-orange-100 text-orange-800">Pending</Badge>
-                                                            </TableCell>
-                                                            <TableCell>
-                                                                <div className="flex gap-2">
-                                                                    <Button
-                                                                        size="sm"
-                                                                        onClick={() => handleOpenModal(order)}
-                                                                        className="flex items-center gap-1"
-                                                                        disabled={order.status === 'cancelled'}
-                                                                    >
-                                                                        <ClipboardCheck className="w-4 h-4" />
-                                                                        Periksa
-                                                                    </Button>
-                                                                </div>
-                                                            </TableCell>
-                                                        </TableRow>
-                                                    ))}
-                                            </TableBody>
-                                        </Table>
-                                        {renderPagination(pendingOrders, 'pendingPage')}
-                                    </>
-                                ) : (
-                                    <div className="text-center py-8">
-                                        <Clock className="w-12 h-12 text-orange-600 mx-auto mb-4" />
-                                        <h3 className="text-lg font-semibold mb-2">Order yang sedang menunggu stok</h3>
-                                        <p className="text-muted-foreground">Order dengan status pending akan muncul di sini</p>
-                                    </div>
+                                {renderOrderTable(
+                                    pendingOrders,
+                                    <Badge variant="default" className="bg-orange-100 text-orange-800">Pending</Badge>,
+                                    "Order Pending",
+                                    <Clock className="w-12 h-12 text-orange-600 mx-auto mb-4" />,
+                                    { title: "Tidak ada order yang pending", description: "Order dengan status pending akan muncul di sini." }
                                 )}
                             </CardContent>
                         </Card>
                     </TabsContent>
-
-                    {/* Order Dikembalikan Tab */}
+                    
                     <TabsContent value="returned">
-                        <Card>
+                         <Card>
                             <CardHeader>
                                 <CardTitle className="flex items-center gap-2">
-                                    <RotateCcw className="w-5 h-5 text-red-600" />
-                                    Order Dikembalikan ({returnedOrders?.data?.length || 0})
+                                    <RotateCcw className="w-5 h-5 text-red-600" /> Order Dikembalikan
                                 </CardTitle>
-                                <p className="text-sm text-muted-foreground">
-                                    Order yang dikembalikan karena barang yang diterima tidak sesuai
-                                </p>
+                                <p className="text-sm text-muted-foreground">Order yang dikembalikan karena barang tidak sesuai.</p>
                             </CardHeader>
                             <CardContent>
-                                {returnedOrders?.data?.length > 0 ? (
-                                    <>
-                                        <Table>
-                                            <TableHeader>
-                                                <TableRow>
-                                                    <TableHead>No. Order</TableHead>
-                                                    <TableHead>Nama Murid</TableHead>
-                                                    <TableHead>Jenjang</TableHead>
-                                                    <TableHead>Jenis Kelamin</TableHead>
-                                                    <TableHead>Tanggal Dikembalikan</TableHead>
-                                                    <TableHead>Status</TableHead>
-                                                </TableRow>
-                                            </TableHeader>
-                                            <TableBody>
-                                                {returnedOrders.data
-                                                    .sort((a: Order, b: Order) =>
-                                                        new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime()
-                                                    )
-                                                    .map((order: Order) => (
-                                                        <TableRow key={order.id}>
-                                                            <TableCell>{order.order_number}</TableCell>
-                                                            <TableCell>{order.nama_murid}</TableCell>
-                                                            <TableCell>{order.jenjang}</TableCell>
-                                                            <TableCell>{order.jenis_kelamin}</TableCell>
-                                                            <TableCell>
-                                                                {formatTableDate(order.updated_at)}
-                                                            </TableCell>
-                                                            <TableCell>
-                                                                <Badge variant="destructive" className="bg-red-100 text-red-800">Dikembalikan</Badge>
-                                                            </TableCell>
-                                                        </TableRow>
-                                                    ))}
-                                            </TableBody>
-                                        </Table>
-                                        {renderPagination(returnedOrders, 'returnedPage')}
-                                    </>
-                                ) : (
-                                    <div className="text-center py-8">
-                                        <RotateCcw className="w-12 h-12 text-red-600 mx-auto mb-4" />
-                                        <h3 className="text-lg font-semibold mb-2">Belum ada order yang dikembalikan</h3>
-                                        <p className="text-muted-foreground">Order yang dikembalikan akan muncul di sini</p>
-                                    </div>
+                                {renderOrderTable(
+                                    returnedOrders,
+                                    <Badge variant="destructive" className="bg-red-100 text-red-800">Dikembalikan</Badge>,
+                                    "Order Dikembalikan",
+                                    <RotateCcw className="w-12 h-12 text-red-600 mx-auto mb-4" />,
+                                    { title: "Belum ada order yang dikembalikan", description: "Order yang dikembalikan akan muncul di sini." }
                                 )}
                             </CardContent>
                         </Card>
                     </TabsContent>
 
-                    {/* Order Dibatalkan Tab */}
-                    <TabsContent value="cancelled" className="mb-6">
-                        <Card>
+                    <TabsContent value="cancelled">
+                         <Card>
                             <CardHeader>
                                 <CardTitle className="flex items-center gap-2">
-                                    <XCircle className="w-5 h-5 text-red-600" />
-                                    Order Dibatalkan ({cancelledOrders?.data?.length || 0})
+                                    <XCircle className="w-5 h-5 text-red-600" /> Order Dibatalkan
                                 </CardTitle>
-                                <p className="text-sm text-muted-foreground">
-                                    Order yang dibatalkan karna kesalahan order
-                                </p>
+                                <p className="text-sm text-muted-foreground">Order yang dibatalkan karena kesalahan order.</p>
                             </CardHeader>
                             <CardContent>
-                                {cancelledOrders?.data?.length > 0 ? (
-                                    <>
-                                        <Table>
-                                            <TableHeader>
-                                                <TableRow>
-                                                    <TableHead>No. Order</TableHead>
-                                                    <TableHead>Nama Murid</TableHead>
-                                                    <TableHead>Jenjang</TableHead>
-                                                    <TableHead>Jenis Kelamin</TableHead>
-                                                    <TableHead>Tanggal Pembatalan</TableHead>
-                                                    <TableHead>Status</TableHead>
-                                                </TableRow>
-                                            </TableHeader>
-                                            <TableBody>
-                                                {cancelledOrders.data
-                                                    .sort((a: Order, b: Order) =>
-                                                        new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime()
-                                                    )
-                                                    .map((order: Order) => (
-                                                        <TableRow key={order.id}>
-                                                            <TableCell>{order.order_number}</TableCell>
-                                                            <TableCell>{order.nama_murid}</TableCell>
-                                                            <TableCell>{order.jenjang}</TableCell>
-                                                            <TableCell>{order.jenis_kelamin}</TableCell>
-                                                            <TableCell>
-                                                                {formatTableDate(order.updated_at)}
-                                                            </TableCell>
-                                                            <TableCell>
-                                                                <Badge variant="destructive" className="bg-red-800 text-red-100">Dibatalkan</Badge>
-                                                            </TableCell>
-                                                        </TableRow>
-                                                    ))}
-                                            </TableBody>
-                                        </Table>
-                                        {renderPagination(cancelledOrders, 'cancelledPage')}
-                                    </>
-                                ) : (
-                                    <div className="text-center py-8">
-                                        <XCircle className="w-12 h-12 text-red-600 mx-auto mb-4" />
-                                        <h3 className="text-lg font-semibold mb-2">Belum ada order yang dibatalkan</h3>
-                                        <p className="text-muted-foreground">Order yang dibatalkan akan muncul di sini</p>
-                                    </div>
+                                {renderOrderTable(
+                                    cancelledOrders,
+                                    <Badge variant="destructive" className="bg-red-800 text-red-100">Dibatalkan</Badge>,
+                                    "Order Dibatalkan",
+                                    <XCircle className="w-12 h-12 text-red-600 mx-auto mb-4" />,
+                                    { title: "Belum ada order yang dibatalkan", description: "Order yang dibatalkan akan muncul di sini." }
                                 )}
                             </CardContent>
                         </Card>

@@ -91,7 +91,7 @@ export default function OrderIndex({
     useEcho(
         'gudang',
         'NewOrderCreated',
-        //@ts-ignore
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
         (event: {order: Order}) => {
             if(auth.user?.role === 'admin_gudang') {
                 router.reload({
@@ -103,7 +103,7 @@ export default function OrderIndex({
     useEcho(
         'gudang',
         'OrderReturned',
-        //@ts-ignore
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
         (event: {order: Order}) => {
             if(auth.user?.role === 'admin_gudang') {
                 router.reload({
@@ -196,7 +196,7 @@ export default function OrderIndex({
                     description: 'Order telah dikembalikan ke proses QC'
                 });
             },
-            //@ts-ignore
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             onError: (error: any) => {
                 toast.error('Gagal mengirim ulang order', {
                     description: error.message || 'Terjadi kesalahan saat mengirim ulang order'
@@ -340,7 +340,7 @@ export default function OrderIndex({
                 {/* Segmentation Tabs */}
                 <div className="mb-8">
                     <Tabs value={
-                        //@ts-ignore
+                        // eslint-disable-next-line @typescript-eslint/no-explicit-any
                         activeSegment} onValueChange={(v: any) => setActiveSegment(v)
                     }>
                         <TabsList className="grid w-full grid-cols-3">
