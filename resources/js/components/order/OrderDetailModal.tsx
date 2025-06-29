@@ -2,7 +2,7 @@
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Order, OrderItem } from '@/types/order';
+import { Order } from '@/types/order';
 import { Download } from 'lucide-react';
 import { useState } from 'react';
 import { router } from '@inertiajs/react';
