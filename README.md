@@ -125,7 +125,7 @@ npm run dev
 
 Ensure the Reverb server is running in a separate terminal:
 ```bash
-php artisan reverb:start --debug
+php artisan reverb:start
 ```
 (use --debug for better dev experience)
 
