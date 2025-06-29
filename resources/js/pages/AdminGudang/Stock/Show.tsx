@@ -136,6 +136,6 @@ const StockShow = ({ item }: Props) => {
             </div>
         </AppLayout>
     );
-};
+}; 
 
 export default StockShow;

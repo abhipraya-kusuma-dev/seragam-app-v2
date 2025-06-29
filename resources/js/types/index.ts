@@ -62,8 +62,8 @@ export interface PageProps extends InertiaPageProps {
         query: Record<string, string>;
         route: string;
         url: string;
-        defaults: Record<string, any>;
-        routes: Record<string, any>;
+        defaults: Record<string, unknown>;
+        routes: Record<string, unknown>;
     };
 }
 

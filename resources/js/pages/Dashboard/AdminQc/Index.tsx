@@ -5,9 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import AppLayout from '@/layouts/app-layout';
-import { type BreadcrumbItem } from '@/types';
 import { PageProps, router } from '@inertiajs/core';
-import { Link } from '@inertiajs/react';
 import { useForm } from '@inertiajs/react';
 import { debounce } from 'lodash';
 import {
@@ -16,14 +14,8 @@ import {
     Package,
     ClipboardCheck,
     RotateCcw,
-    Eye,
-    FileText,
-    TrendingUp,
-    Users,
     Clock,
     LogOut,
-    ChevronLeft,
-    ChevronRight
 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import QualityCheckModal from '@/components/qc/QualityCheckModal';

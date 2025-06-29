@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Card } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
-import { Plus, Trash2, ArrowLeft, Home, Minus } from 'lucide-react';
+import { Plus, Trash2, ArrowLeft, Home, Minus } from 'lucide-react'; 
 import { type PageProps } from '@inertiajs/core';
 import { toast } from 'sonner';
 import AppLayout from '@/layouts/app-layout';

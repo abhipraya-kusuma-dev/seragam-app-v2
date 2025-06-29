@@ -10,7 +10,7 @@ import { Home, RotateCcw, Search } from 'lucide-react';
 import { type PageProps } from '@inertiajs/core';
 import { Link, usePage } from '@inertiajs/react';
 import { toast } from 'sonner';
-import { router } from '@inertiajs/react';
+import { router } from '@inertiajs/react'; 
 import { 
     Pagination, 
     PaginationContent, 
