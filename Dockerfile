@@ -1,7 +1,7 @@
 # ============================
 # Stage 1: Node for frontend
 # ============================
-FROM node:18-alpine as frontend
+FROM node:22-alpine as frontend
 
 # Set working directory
 WORKDIR /app
