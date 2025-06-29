@@ -13,6 +13,7 @@ COPY package*.json ./
 RUN npm install
 
 # Copy the rest of the code
+COPY docker/env/.env.prod .env
 COPY . .
 
 # Build Tailwind / JS assets
