@@ -72,15 +72,15 @@ interface Props extends PageProps {
             role: string;
         };
     };
-    //@ts-ignore
+    //@ts-expected-error
     inProgressOrders?: any;
-    //@ts-ignore
+    //@ts-expected-error
     pendingOrders?: any;
-    //@ts-ignore
+    //@ts-expected-error
     completedOrders?: any;
-    //@ts-ignore
+    //@ts-expected-error
     returnedOrders?: any;
-    //@ts-ignore
+    //@ts-expected-error
     cancelledOrders?: any;
     qcStats?: {
         inProgress: number;
@@ -118,6 +118,7 @@ export default function AdminQcDashboard({
     useEcho(
         'qc',
         'OrderReaded',
+        //@ts-expected-error
         (event: { order: Order }) => {
             if (auth.user?.role === 'admin_qc') {
                 router.reload({
@@ -129,6 +130,7 @@ export default function AdminQcDashboard({
     useEcho(
         'qc',
         'OrderReturnedBack',
+        //@ts-expected-error
         (event: { order: Order }) => {
             if (auth.user?.role === 'admin_qc') {
                 router.reload({
@@ -281,9 +283,9 @@ export default function AdminQcDashboard({
                         </PaginationItem>
 
                         {paginator.links
-                        //@ts-ignore
+                        //@ts-expected-error
                             .filter((link: any) => !['&laquo; Previous', 'Next &raquo;'].includes(link.label))
-                        //@ts-ignore
+                        //@ts-expected-error
                             .map((link: any, index: number) => {
                                 if (link.label === '...') {
                                     return (
