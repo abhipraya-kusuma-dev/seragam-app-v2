@@ -1,0 +1,30 @@
+version: '3.8'
+
+services:
+  app:
+    build:
+      context: .
+      target: backend
+    container_name: SS_BE
+    ports:
+      - "8001:8001"
+      - "8080:8080"
+    volumes:
+      - ./docker/env/.env.prod:/var/www/.env
+    depends_on:
+      - pgsql
+
+  pgsql:
+    image: postgres:latest
+    container_name: SS_DB
+    env_file:
+      - ./docker/env/.env.prod
+    environment:
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    ports:
+      - "5434:5432"
+
+volumes:
+  pgdata:
