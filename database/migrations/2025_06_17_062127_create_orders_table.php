@@ -15,7 +15,7 @@ return new class extends Migration
             $table->id();
             $table->string('order_number')->unique();
             $table->string('nama_murid');
-            $table->enum('jenjang', ['SDIT', 'SMP', 'SMA', 'SMK']);
+            $table->enum('jenjang', ['SDIT', 'SDS', 'SMP', 'SMA', 'SMK']);
             $table->enum('jenis_kelamin', ['Pria', 'Wanita']);
             $table->enum('status', ['in-progress', 'completed', 'pending', 'cancelled'])->default('in-progress');
             $table->boolean('notif_status')->default(false);

@@ -313,7 +313,8 @@ export default function OrderIndex({
                                         <SelectTrigger><SelectValue placeholder="Semua Jenjang" /></SelectTrigger>
                                         <SelectContent>
                                             <SelectItem value="all">Semua Jenjang</SelectItem>
-                                            <SelectItem value="SD">SD</SelectItem>
+                                            <SelectItem value="SDIT">SDIT</SelectItem>
+                                            <SelectItem value="SDS">SDS</SelectItem>
                                             <SelectItem value="SMP">SMP</SelectItem>
                                             <SelectItem value="SMA">SMA</SelectItem>
                                             <SelectItem value="SMK">SMK</SelectItem>

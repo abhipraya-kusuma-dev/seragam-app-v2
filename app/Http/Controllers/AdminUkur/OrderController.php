@@ -68,7 +68,7 @@ class OrderController extends Controller
 
         return inertia('AdminUkur/Orders/Create', [
             'items' => $items,
-            'jenjangOptions' => ['SDIT', 'SMP', 'SMA', 'SMK'],
+            'jenjangOptions' => ['SDIT', 'SDS', 'SMP', 'SMA', 'SMK'],
             'jenisKelaminOptions' => ['Pria', 'Wanita'],
             'nextOrderId' => $nextOrderId,
         ]);

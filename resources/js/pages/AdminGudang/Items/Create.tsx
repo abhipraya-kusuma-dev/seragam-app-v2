@@ -33,6 +33,9 @@ export default function ItemsCreate({ jenjangOptions, jenisKelaminOptions }: Pro
 
     const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
+
+        const toastId = toast.loading('Mengunggah file dan memproses stok...');
+
         if (activeTab === 'single') {
             post('/admin/gudang/items');
         } else {
@@ -43,13 +46,13 @@ export default function ItemsCreate({ jenjangOptions, jenisKelaminOptions }: Pro
             post('/admin/gudang/items/import', {
                 forceFormData: true,
                 onSuccess: () => {
-                    toast.success('File berhasil diimpor!');
+                    toast.success('File berhasil diimpor!', {id: toastId});
                     reset('excel_file');
                     setFile(null);
                     setImportError(null);
                 },
                 onError: (errors) => {
-                    toast.error(errors.excel_file || 'Terjadi kesalahan saat mengimpor file.');
+                    toast.error(errors.excel_file || 'Terjadi kesalahan saat mengimpor file.', {id: toastId});
                     setImportError(errors.excel_file || 'Terjadi kesalahan saat mengimpor file.');
                 }
             });

@@ -52,7 +52,7 @@ Route::middleware(['auth'])->prefix('/admin/gudang')->group(function () {
     })->name('template.stok');
     Route::post('/stock/reset-all', [StockController::class, 'resetAll'])
         ->name('admin-gudang.stock.reset-all');
-    Route::get('/items/{item}/stock/reset', [StockController::class, 'reset'])
+    Route::post('/items/{item}/stock/reset', [StockController::class, 'reset'])
         ->name('admin-gudang.stock.reset');
 
     //Order routes

@@ -127,13 +127,26 @@ const ItemsIndex = ({ items, filters, jenjangOptions, jenisKelaminOptions, templ
 
     const handleBulkSubmit = (e: React.FormEvent) => {
         e.preventDefault();
+        // 1. Show a loading toast when the submission starts
+        const toastId = toast.loading('Mengunggah file dan memproses stok...');
+
         post(route('admin-gudang.items.bulk-update-stock'), {
+            preserveScroll: true,
             onSuccess: () => {
+                toast.success('Berhasil mengupdate stok', { id: toastId });
                 setIsDialogOpen(false);
-                reset();
+                reset(); 
+            },
+
+            onError: (errors) => {
+                if (errors.excel_file) {
+                    toast.error(errors.excel_file, { id: toastId });
+                } else {
+                    toast.error('Terjadi kesalahan validasi. Mohon periksa kembali file Anda.', { id: toastId });
+                }
             },
         });
-    };
+    }
 
     const handleResetAll = () => {
         router.post(route('admin-gudang.stock.reset-all'), {}, {

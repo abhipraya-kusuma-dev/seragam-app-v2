@@ -22,7 +22,7 @@ class OrderController extends Controller
             ->where('return_status', false)
             ->where('status', 'pending')
             ->with('orderItems.item.stock')
-            ->latest()
+            ->orderBy('updated_at', 'asc')
             ->paginate(10);
                 
         return inertia('AdminQC/Orders/Index', [

@@ -46,18 +46,18 @@ class OrderController extends Controller
         $newOrders = $queryBuilder()
             ->where('notif_status', false)
             ->where('return_status', false)
-            ->latest()
+            ->oldest()
             ->paginate($perPage);
            
         $viewedOrders = $queryBuilder()
             ->where('notif_status', true)
             ->where('return_status', false)
-            ->latest()
+            ->oldest()
             ->paginate($perPage);
            
         $returnedOrders = $queryBuilder()
             ->where('return_status', true)
-            ->latest()
+            ->oldest()
             ->paginate($perPage);
         
         // Get counts for badges

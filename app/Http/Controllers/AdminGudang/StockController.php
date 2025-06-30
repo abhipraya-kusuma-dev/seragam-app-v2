@@ -83,7 +83,7 @@ class StockController extends Controller
             'excel_file' => 'required|file|mimes:xlsx,xls|max:2048',
         ]);
 
-        $path = $request->file('excel_file')->store('temp', 'local');
+        $path = $request->file('excel_file')->store('temp', 'public');
 
         try {
             $excel->import(new class implements ToCollection, WithHeadingRow {
@@ -92,7 +92,6 @@ class StockController extends Controller
                     DB::beginTransaction();
                     try {
                         foreach ($rows as $index => $row) {
-                            // Validate required columns
                             $required = ['nama_item', 'jenjang', 'jenis_kelamin', 'size', 'qty'];
                             foreach ($required as $field) {
                                 if (!isset($row[$field])) {
@@ -100,38 +99,26 @@ class StockController extends Controller
                                 }
                             }
 
-                            // Convert quantity to integer
                             $qty = is_numeric($row['qty']) ? (int)$row['qty'] : 0;
-                            
-                            // Convert nama_item to lowercase for case-insensitive search
                             $namaItem = strtolower($row['nama_item']);
                             
-                            // Find matching item with case-insensitive nama_item
                             $item = Item::whereRaw('LOWER(nama_item) = ?', [$namaItem])
-                                        ->where('jenjang', $row['jenjang'])
-                                        ->where('jenis_kelamin', $row['jenis_kelamin'])
-                                        ->where('size', $row['size'])
-                                        ->first();
+                                ->where('jenjang', $row['jenjang'])
+                                ->where('jenis_kelamin', $row['jenis_kelamin'])
+                                ->where('size', $row['size'])
+                                ->first();
 
                             if (!$item) {
                                 throw new \Exception("Baris " . ($index + 2) . ": Item tidak ditemukan - " . 
-                                                    $row['nama_item'] . " | " . 
-                                                    $row['jenjang'] . " | " . 
-                                                    $row['jenis_kelamin'] . " | " . 
-                                                    $row['size']);
+                                    $row['nama_item'] . " | " . $row['jenjang'] . " | " . 
+                                    $row['jenis_kelamin'] . " | " . $row['size']);
                             }
 
-                            // Update or create stock
-                            $stock = Stock::where('item_id', $item->id)->first();
-                            
-                            if ($stock) {
-                                $stock->increment('qty', $qty);
-                            } else {
-                                Stock::create([
-                                    'item_id' => $item->id,
-                                    'qty' => $qty
-                                ]);
-                            }
+                            // ✅ CORRECT LOGIC: Replaced the increment logic with updateOrCreate
+                            Stock::updateOrCreate(
+                                ['item_id' => $item->id], // Find stock by item_id
+                                ['qty' => $qty]           // Set the quantity
+                            );
                         }
                         DB::commit();
                     } catch (\Exception $e) {
@@ -141,11 +128,12 @@ class StockController extends Controller
                 }
             }, $path);
 
-            Storage::disk('local')->delete($path);
-
+            Storage::disk('public')->delete($path);
             return back()->with('success', 'Stok berhasil diperbarui secara massal');
+            
         } catch (\Exception $e) {
-            Storage::disk('local')->delete($path);
+            // This will now catch the "Item tidak ditemukan" error if it occurs
+            Storage::disk('public')->delete($path);
             return back()->with('error', 'Terjadi kesalahan: ' . $e->getMessage());
         }
     }

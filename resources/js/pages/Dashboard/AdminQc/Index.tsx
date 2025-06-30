@@ -338,7 +338,7 @@ export default function AdminQcDashboard({
             );
         }
 
-        const sortedOrders = [...ordersPaginator.data].sort((a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime());
+        const sortedOrders = ordersPaginator.data;
 
         return (
             <>
@@ -521,7 +521,8 @@ export default function AdminQcDashboard({
                                          </SelectTrigger>
                                          <SelectContent>
                                              <SelectItem value="all">Semua Jenjang</SelectItem>
-                                             <SelectItem value="SD">SD</SelectItem>
+                                             <SelectItem value="SDIT">SDIT</SelectItem>
+                                             <SelectItem value="SDS">SDS</SelectItem>
                                              <SelectItem value="SMP">SMP</SelectItem>
                                              <SelectItem value="SMA">SMA</SelectItem>
                                              <SelectItem value="SMK">SMK</SelectItem>
