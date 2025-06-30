@@ -138,7 +138,7 @@ class ItemsController extends Controller
             'excel_file' => 'required|file|mimes:xlsx,xls|max:2048',
         ]);
 
-        $path = $request->file('excel_file')->store('temp', 'local');
+        $path = $request->file('excel_file')->store('temp', 'public');
 
         try {
             $excel->import(new class implements ToCollection, WithHeadingRow {
@@ -193,7 +193,7 @@ class ItemsController extends Controller
                 }
             }, $path);
 
-            Storage::disk('local')->delete($path);
+            Storage::disk('public')->delete($path);
 
             return redirect()->route('admin-gudang.items.index')
                 ->with('success', 'File berhasil diimpor');
