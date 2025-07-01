@@ -110,6 +110,14 @@ export default function OrderIndex({
         }
     });
 
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    useEcho('gudang', 'OrderDownloaded', (event: {order: Order}) => {
+        if(auth.user?.role === 'admin_gudang') {
+            console.log('tes');
+            router.reload({ only: ['newOrders', 'viewedOrders', 'counts'] });
+        }
+    });
+
     const openOrderDetail = async (order: Order) => {
         setOpeningDetailId(order.id);
         try {

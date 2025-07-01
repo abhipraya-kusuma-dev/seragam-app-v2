@@ -1,10 +1,8 @@
-import { Head } from '@inertiajs/react';
+import { Head, usePage, router } from '@inertiajs/react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import AppLayout from '@/layouts/app-layout';
-import { usePage } from '@inertiajs/react';
-import { PageProps } from '@inertiajs/core';
 import { useForm, Link } from '@inertiajs/react';
 import { 
     Package, 
@@ -15,9 +13,9 @@ import {
     List,
     ShoppingBag
 } from 'lucide-react';
-import { useState } from 'react';
-import { Order } from '@/types/order';
 import { useEcho } from '@laravel/echo-react';
+import { Order } from '@/types/order';
+import { PageProps } from '@inertiajs/core';
 
 interface Props extends PageProps {
     auth: {
@@ -31,37 +29,53 @@ interface Props extends PageProps {
         sudah_terbaca: number;
         dikembalikan: number;
     };
-    recentOrders: Order[]; // Use the Order type
+    recentOrders: Order[];
 }
 
 export default function AdminGudangDashboard() {
-    const { auth, orderStats: initialOrderStats, recentOrders: initialRecentOrders } = usePage<Props>().props;
+    const { auth, orderStats, recentOrders } = usePage<Props>().props;
     const logoutForm = useForm();
 
-    // State for orders and stats
-    const [recentOrders, setRecentOrders] = useState<Order[]>(initialRecentOrders);
-    const [orderStats, setOrderStats] = useState(initialOrderStats);
-
-    // Use Echo with proper typing
+    // Handle Echo events with router.reload
     useEcho(
         'gudang',
         'NewOrderCreated',
-        (event: {order: Order}) => {
-            if(auth.user?.role === 'admin_gudang') {
-                // Update recent orders (prepend new order)
-                setRecentOrders(prev => [
-                    event.order, 
-                    ...prev.slice(0, 4) // Keep only first 5 orders total
-                ]);
-                
-                // Update stats
-                setOrderStats(prev => ({
-                    ...prev,
-                    belum_terbaca: prev.belum_terbaca + 1
-                }));
+        () => {
+            if (auth.user?.role === 'admin_gudang') {
+                router.reload({ only: ['orderStats', 'recentOrders'] });
             }
         }
     );
+    
+    useEcho(
+        'gudang',
+        'OrderDownloaded',
+        () => {
+            if (auth.user?.role === 'admin_gudang') {
+                router.reload({ only: ['orderStats', 'recentOrders'] });
+            }
+        }
+    );
+    
+    useEcho(
+        'gudang',
+        'OrderReturned',
+        () => {
+            if (auth.user?.role === 'admin_gudang') {
+                router.reload({ only: ['orderStats', 'recentOrders'] });
+            }
+        }
+    );
+
+    useEcho(
+        'gudang',
+        'OrderDownloaded',
+        () => {
+            if (auth.user?.role === 'admin_gudang') {
+                router.reload({ only: ['orderStats', 'recentOrders'] });
+            }
+        }
+    )
 
     return (
         <AppLayout>
@@ -252,7 +266,6 @@ export default function AdminGudangDashboard() {
                     </Card>
                 </div>
             </div>
-            
         </AppLayout>
     );
 }

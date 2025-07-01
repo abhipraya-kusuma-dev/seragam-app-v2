@@ -9,6 +9,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use App\Models\Stock;
 use App\Events\OrderReturned;
+use App\Events\OrderStatusUpdated;
 
 class OrderController extends Controller
 {
@@ -121,6 +122,7 @@ class OrderController extends Controller
 
             $order->load('orderItems');
             $order->updateStatus();
+            event(new OrderStatusUpdated($order));
         });
 
         return redirect()->back()->with('success', 'Proses QC berhasil diselesaikan');

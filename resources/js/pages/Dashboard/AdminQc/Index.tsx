@@ -161,6 +161,18 @@ export default function AdminQcDashboard({
     );
     useEcho(
         'qc',
+        'OrderStatusUpdated',
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        (_event: { order: Order }) => {
+            if (auth.user?.role === 'admin_qc') {
+                router.reload({
+                    only: ['inProgressOrders', 'pendingOrders', 'completedOrders', 'returnedOrders', 'cancelledOrders', 'qcStats'],
+                });
+            }
+        }
+    );
+    useEcho(
+        'qc',
         'TriggerPopupQc',
         (event: {orderNumber: string, modalState: boolean}) => {
             if (event.modalState) {

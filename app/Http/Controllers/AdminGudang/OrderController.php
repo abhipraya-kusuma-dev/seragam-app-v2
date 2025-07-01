@@ -2,6 +2,7 @@
 namespace App\Http\Controllers\AdminGudang;
 use App\Events\OrderReaded;
 use App\Events\OrderReturnedBack;
+use App\Events\OrderDownloaded;
 use App\Http\Controllers\Controller;
 use App\Models\Order;
 use Illuminate\Http\Request;
@@ -100,6 +101,7 @@ class OrderController extends Controller
             ]);
 
             event(new OrderReaded($order));
+            event(new OrderDownloaded($order));
 
             return back()->with('success', 'Notification status updated successfully');
         } catch (ValidationException $e) {
