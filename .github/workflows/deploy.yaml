@@ -9,9 +9,6 @@ jobs:
   deploy:
     runs-on: self-hosted
     steps:
-      - name: Copy secret env
-        run:
-
       - uses: actions/checkout@v3
       - name: Pull and build Docker
         run: |
