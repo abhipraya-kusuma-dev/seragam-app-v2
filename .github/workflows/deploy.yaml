@@ -10,10 +10,12 @@ jobs:
     runs-on: self-hosted
     steps:
       - name: Copy secret env
-        run: copy C:\Users\SMAKA-SERVER\ppdb\seragam-app-v2\docker\env\.env.prod C:\Users\SMAKA-SERVER\ppdb\actions-runner-ss\_work\seragam-app-v2\seragam-app-v2\docker\env\.env.prod
+        run:
 
       - uses: actions/checkout@v3
       - name: Pull and build Docker
         run: |
+          cp C:\Users\SMAKA-SERVER\ppdb\seragam-app-v2\docker\env\.env.prod C:\Users\SMAKA-SERVER\ppdb\actions-runner-ss\_work\seragam-app-v2\seragam-app-v2\docker\env\.env.prod
+          ls
           git pull
           docker-compose up -d --build
