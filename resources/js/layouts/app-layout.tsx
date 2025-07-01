@@ -32,8 +32,6 @@ function RealtimeNotificationHandler() {
             }
         }
     );
-
-
     useEcho(
         'qc',
         'OrderReaded',
@@ -52,6 +50,17 @@ function RealtimeNotificationHandler() {
             if(auth.user?.role === 'admin_qc') {
                 toast.warning('Ada Order yang dikembalikan dari Gudang', {
                     description: `Order #${event.order.order_number}`,
+                });
+            }
+        }
+    );
+    useEcho(
+        'ukur',
+        'OrderCancelled',
+        (event: {order: Order}) => {
+            if(auth.user?.role === 'admin_ukur') {
+                toast.warning('Ada order yang dibatalkan', {
+                    description: `Order #${event.order.order_number} dibatalkan`,
                 });
             }
         }

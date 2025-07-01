@@ -13,6 +13,7 @@ use Illuminate\Support\Facades\DB;
 use App\Models\Stock;
 use Illuminate\Support\Facades\Auth;
 use App\Events\NewOrderCreated;
+use App\Events\NewOrderCreatedUkur;
 
 class OrderController extends Controller
 {
@@ -119,6 +120,7 @@ class OrderController extends Controller
 
             DB::afterCommit(function () use ($order) {
                 event(new NewOrderCreated($order));
+                event(new NewOrderCreatedUkur($order));
             });
         });
 

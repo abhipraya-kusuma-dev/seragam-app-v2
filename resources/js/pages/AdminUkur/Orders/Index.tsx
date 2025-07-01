@@ -13,6 +13,8 @@ import {
 } from '@/components/ui/pagination';
 import AppLayout from '@/layouts/app-layout';
 import { cn } from '@/lib/utils';
+import { useEcho } from '@laravel/echo-react';
+import { useState, useEffect } from 'react';
 
 interface Order {
     id: number;
@@ -53,7 +55,90 @@ interface Props {
     };
 }
 
+
 const OrderIndex = ({ orders }: Props) => {
+
+    const [ordersState, setOrdersState] = useState(orders);
+
+    // Sync state with prop updates
+    useEffect(() => {
+        setOrdersState(orders);
+    }, [orders]);
+
+    useEcho(
+        'ukur',
+        'OrderCancelled',
+        (event: { order: { order_number: string } }) => {
+            setOrdersState(prev => {
+                const newData = prev.data.map(order => 
+                    order.order_number === event.order.order_number
+                        ? { ...order, status: 'cancelled' }
+                        : order
+                );
+                
+                return {
+                    ...prev,
+                    data: newData
+                };
+            });
+        }
+    );
+
+    useEcho(
+        'ukur',
+        'OrderStatusUpdatedUkur',
+        (event: { order: { order_number: string; status: string } }) => {
+            setOrdersState(prev => ({
+                ...prev,
+                data: prev.data.map(order => 
+                    order.order_number === event.order.order_number
+                        ? { ...order, status: event.order.status }
+                        : order
+                )
+            }));
+        }
+    );
+
+    useEcho(
+        'ukur',
+        'NewOrderCreatedUkur',
+        (event: { order: Order }) => {
+            setOrdersState(prev => {
+                const isDuplicate = prev.data.some(
+                    existingOrder => existingOrder.order_number === event.order.order_number
+                );
+
+                if (isDuplicate) {
+                    return prev;
+                }
+
+                if (prev.meta.current_page === 1) {
+                    return {
+                        ...prev,
+                        // Prepend the new order to the data array
+                        data: [event.order, ...prev.data],
+                        // Update metadata
+                        meta: {
+                            ...prev.meta,
+                            total: prev.meta.total + 1,
+                            to: prev.meta.to + 1
+                        }
+                    };
+                }
+
+                // If not on the first page, just update the total count
+                return {
+                    ...prev,
+                    meta: {
+                        ...prev.meta,
+                        total: prev.meta.total + 1
+                    }
+                };
+            });
+        }
+    );
+
+
     return (
 
         <AppLayout>
@@ -89,14 +174,14 @@ const OrderIndex = ({ orders }: Props) => {
                         </TableRow>
                     </TableHeader>
                     <TableBody>
-                        {orders.data.length === 0 ? (
+                        {ordersState.data.length === 0 ? (
                             <TableRow>
                                 <TableCell colSpan={7} className="text-center py-8 text-gray-500">
                                     Belum ada order
                                 </TableCell>
                             </TableRow>
                         ) : (
-                            orders.data.map((order) => (
+                            ordersState.data.map((order) => (
                                 <TableRow key={order.id}>
                                     <TableCell className="font-medium">{order.order_number}</TableCell>
                                     <TableCell>{order.nama_murid}</TableCell>

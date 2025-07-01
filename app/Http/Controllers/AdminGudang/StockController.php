@@ -115,10 +115,15 @@ class StockController extends Controller
                             }
 
                             // ✅ CORRECT LOGIC: Replaced the increment logic with updateOrCreate
-                            Stock::updateOrCreate(
-                                ['item_id' => $item->id], // Find stock by item_id
-                                ['qty' => $qty]           // Set the quantity
-                            );
+                            $stock = Stock::firstOrNew(['item_id' => $item->id]);
+
+                            // Tambahkan kuantitas dari Excel ke kuantitas yang ada
+                            // Jika stok baru dibuat, $stock->qty akan default ke 0, jadi 0 + $qty
+                            $stock->qty += $qty;
+
+                            // Simpan perubahan ke database
+                            $stock->save();
+                            
                         }
                         DB::commit();
                     } catch (\Exception $e) {

@@ -14,6 +14,11 @@ export default defineConfig({
         react(),
         tailwindcss(),
     ],
+    server: {
+        host: '192.168.0.103',
+        port: 5173, // or any port you're using
+        cors: true
+    },
     esbuild: {
         jsx: 'automatic',
     },
