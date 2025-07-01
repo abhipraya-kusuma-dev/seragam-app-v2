@@ -1,0 +1,16 @@
+name: Cerita nya ini CI/CD
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: self-hosted
+    steps:
+      - uses: actions/checkout@v3
+      - name: Pull and build Docker
+        run: |
+          git pull
+          docker-compose up -d --build
