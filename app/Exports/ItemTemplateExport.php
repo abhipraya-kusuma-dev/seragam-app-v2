@@ -27,7 +27,7 @@ class ItemTemplateExport implements FromCollection, WithHeadings, ShouldAutoSize
                     'jenjang' => $item->jenjang,
                     'jenis_kelamin' => $item->jenis_kelamin,
                     'size' => $item->size,
-                    'qty' => 0 // Default value untuk kolom qty
+                    'qty' => '0' // Default value untuk kolom qty
                 ];
             });
     }

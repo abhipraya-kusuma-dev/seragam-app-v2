@@ -154,7 +154,7 @@ export default function AdminQcDashboard({
         (_event: { order: Order }) => {
             if (auth.user?.role === 'admin_qc') {
                 router.reload({
-                    only: ['inProgressOrders', 'qcStats'],
+                    only: ['inProgressOrders', 'returnedOrders','qcStats'],
                 });
             }
         }

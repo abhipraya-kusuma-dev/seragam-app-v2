@@ -67,16 +67,6 @@ export default function AdminGudangDashboard() {
         }
     );
 
-    useEcho(
-        'gudang',
-        'OrderDownloaded',
-        () => {
-            if (auth.user?.role === 'admin_gudang') {
-                router.reload({ only: ['orderStats', 'recentOrders'] });
-            }
-        }
-    )
-
     return (
         <AppLayout>
             <Head title="Dasbor Admin Gudang" />

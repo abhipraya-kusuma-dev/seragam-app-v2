@@ -10,6 +10,8 @@ use Illuminate\Support\Facades\DB;
 use App\Models\Stock;
 use App\Events\OrderReturned;
 use App\Events\OrderStatusUpdated;
+use App\Events\OrderStatusUpdatedUkur;
+use App\Events\OrderCancelled;
 
 class OrderController extends Controller
 {
@@ -78,6 +80,8 @@ class OrderController extends Controller
             ]);
         });
 
+        event(new OrderCancelled($order));
+
         return redirect()->back()->with('success', 'Order berhasil dibatalkan');
     }
 
@@ -123,6 +127,7 @@ class OrderController extends Controller
             $order->load('orderItems');
             $order->updateStatus();
             event(new OrderStatusUpdated($order));
+            event(new OrderStatusUpdatedUkur($order));
         });
 
         return redirect()->back()->with('success', 'Proses QC berhasil diselesaikan');

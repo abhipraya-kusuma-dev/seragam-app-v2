@@ -1,4 +1,4 @@
-import { Head } from '@inertiajs/react';
+import { Head, router } from '@inertiajs/react';
 import { Button } from '@/components/ui/button';
 import AppLayout from '@/layouts/app-layout';
 import { usePage } from '@inertiajs/react';
@@ -7,6 +7,7 @@ import { useForm } from '@inertiajs/react';
 import { Card, CardContent, CardTitle, CardDescription } from '@/components/ui/card';
 import { Plus, List, LogOut } from 'lucide-react';
 import { Link } from '@inertiajs/react';
+import { useEcho } from '@laravel/echo-react';
 
 interface Props extends PageProps {
     auth: {
@@ -33,6 +34,26 @@ interface Props extends PageProps {
 export default function AdminUkurDashboard() {
     const { auth, recentOrders } = usePage<Props>().props;
     const logoutForm = useForm();
+
+    useEcho(
+        'ukur',
+        'OrderStatusUpdated',
+        () => {
+            if (auth.user?.role === 'admin_ukur') {
+                router.reload({ only: ['orderStats', 'recentOrders'] });
+            }
+        }
+    );
+
+    useEcho(
+        'ukur',
+        'NewOrderCreatedUkur',
+        () => {
+            if (auth.user?.role === 'admin_ukur') {
+                router.reload({ only: ['orderStats', 'recentOrders'] });
+            }
+        }
+    );
 
     return (
         <AppLayout>
