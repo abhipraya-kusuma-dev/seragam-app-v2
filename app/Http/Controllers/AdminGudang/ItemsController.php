@@ -67,6 +67,7 @@ class ItemsController extends Controller
             'jenjangOptions' => [
                 'SDIT',
                 'SDS',
+                'SD',
                 'SMP',
                 'SMA',
                 'SMK',
@@ -101,6 +102,7 @@ class ItemsController extends Controller
             'jenjangOptions' => [
                 'SDIT',
                 'SDS',
+                'SD',
                 'SMP',
                 'SMA',
                 'SMK',
@@ -122,7 +124,7 @@ class ItemsController extends Controller
 
         $validated = $request->validate([
             'nama_item' => 'required|string',
-            'jenjang' => 'required|in:SDIT,SDS,SMP,SMA,SMK,SD-SMP,SMP-SMA-SMK,SD-SMP-SMA,SMA-SMK,SD-SMP-SMA-SMK',
+            'jenjang' => 'required|in:SDIT,SDS,SD,SMP,SMA,SMK,SD-SMP,SMP-SMA-SMK,SD-SMP-SMA,SMA-SMK,SD-SMP-SMA-SMK',
             'jenis_kelamin' => 'required|in:Pria,Wanita,UNI',
             'size' => 'required|string',
         ]);
@@ -161,6 +163,7 @@ class ItemsController extends Controller
             return redirect()->route('admin-gudang.items.index')
             ->with('success', 'File berhasil diimpor');
         } catch (\Exception $e) {
+            dd($e);
             return back()->with('error', 'Terjadi kesalahan: ' . $e->getMessage());
         } 
     }

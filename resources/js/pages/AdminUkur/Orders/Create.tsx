@@ -7,6 +7,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Card } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Plus, Trash2, ArrowLeft, Home, Minus } from 'lucide-react';
+// 1. Import AlertDialog components
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { type PageProps } from '@inertiajs/core';
 import { toast } from 'sonner';
 import AppLayout from '@/layouts/app-layout';
@@ -56,6 +58,8 @@ export default function CreateOrder({ items: initialItems, jenjangOptions, jenis
     });
     const [search, setSearch] = useState('');
     const [currentNextOrderId, setCurrentNextOrderId] = useState<number | undefined>(nextOrderId);
+    // 2. Add state to control the dialog visibility
+    const [isConfirmDialogOpen, setIsConfirmDialogOpen] = useState(false);
 
     // Listen for stock updates
     useEcho(
@@ -96,7 +100,7 @@ export default function CreateOrder({ items: initialItems, jenjangOptions, jenis
         if (!data.jenjang || !data.jenis_kelamin) return [];
         let filtered = [...items];
         if (data.jenjang) {
-            filtered = filtered.filter(item => item.jenjang === data.jenjang || item.jenjang.includes(data.jenjang));
+            filtered = filtered.filter(item => item.jenjang === data.jenjang || item.jenjang.includes(data.jenjang) || (data.jenjang.startsWith('SDS')? item.jenjang.includes('SD') && !item.jenjang.includes('SDIT') : '') || (data.jenjang.startsWith('SDIT')? item.jenjang.includes('SD') && !item.jenjang.includes('SDS') : ''));
         }
         if (data.jenis_kelamin) {
             filtered = filtered.filter(item => item.jenis_kelamin === data.jenis_kelamin || item.jenis_kelamin === 'UNI');
@@ -143,16 +147,25 @@ export default function CreateOrder({ items: initialItems, jenjangOptions, jenis
         toast.info("Item Dihapus", { description: `${capitalizeWords(removedItem.nama_item)} dihapus dari order.` });
     };
 
+    // 3. This function now opens the confirmation dialog
     const submit = (e: React.FormEvent) => {
         e.preventDefault();
         if (data.items.length === 0) {
             toast.warning("Order Kosong", { description: "Silakan tambahkan setidaknya satu item." });
             return;
         }
+        setIsConfirmDialogOpen(true); // Open the dialog
+    };
+
+    // 4. This new function handles the actual form submission
+    const handleConfirmSubmit = () => {
         post(route('admin-ukur.orders.store'), {
             onSuccess: () => {
                 setData({ ...data, nama_murid: '', items: [] });
                 setSearch('');
+            },
+            onFinish: () => {
+                setIsConfirmDialogOpen(false); // Close the dialog on finish (success or error)
             }
         });
     };
@@ -180,7 +193,13 @@ export default function CreateOrder({ items: initialItems, jenjangOptions, jenis
                             </div>
                             <div>
                                 <Label htmlFor="jenjang">Jenjang</Label>
-                                <Select value={data.jenjang} onValueChange={value => setData('jenjang', value)}>
+                                <Select
+                                    value={data.jenjang}
+                                    onValueChange={value => {
+                                        setData(prevData => ({ ...prevData, jenjang: value, items: [] }));
+                                        toast.info("Filter diubah", { description: "Daftar item yang dipilih telah dikosongkan." });
+                                    }}
+                                >
                                     <SelectTrigger className="mt-1"><SelectValue placeholder="Pilih jenjang..." /></SelectTrigger>
                                     <SelectContent>{jenjangOptions.map(option => <SelectItem key={option} value={option}>{option}</SelectItem>)}</SelectContent>
                                 </Select>
@@ -188,7 +207,13 @@ export default function CreateOrder({ items: initialItems, jenjangOptions, jenis
                             </div>
                             <div>
                                 <Label htmlFor="jenis_kelamin">Jenis Kelamin</Label>
-                                <Select value={data.jenis_kelamin} onValueChange={value => setData('jenis_kelamin', value)}>
+                                <Select
+                                    value={data.jenis_kelamin}
+                                    onValueChange={value => {
+                                        setData(prevData => ({ ...prevData, jenis_kelamin: value, items: [] }));
+                                        toast.info("Filter diubah", { description: "Daftar item yang dipilih telah dikosongkan." });
+                                    }}
+                                >
                                     <SelectTrigger className="mt-1"><SelectValue placeholder="Pilih jenis kelamin..." /></SelectTrigger>
                                     <SelectContent>{jenisKelaminOptions.map(option => <SelectItem key={option} value={option}>{option}</SelectItem>)}</SelectContent>
                                 </Select>
@@ -258,11 +283,30 @@ export default function CreateOrder({ items: initialItems, jenjangOptions, jenis
                         </div>
                         <div className="flex justify-between pt-4">
                             <Button type="button" variant="outline" onClick={() => setData('items', [])} disabled={data.items.length === 0}>Hapus Semua Item</Button>
+                            {/* This button still triggers the form's `onSubmit` handler */}
                             <Button type="submit" disabled={data.items.length === 0 || processing}>{processing ? 'Membuat Order...' : 'Buat Order'}</Button>
                         </div>
                     </form>
                 </Card>
             </div>
+
+            {/* 5. Add the AlertDialog component */}
+            <AlertDialog open={isConfirmDialogOpen} onOpenChange={setIsConfirmDialogOpen}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Konfirmasi Pembuatan Order</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            Apakah orderan sudah sesuai dengan nota?
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel disabled={processing}>Batal</AlertDialogCancel>
+                        <AlertDialogAction onClick={handleConfirmSubmit} disabled={processing}>
+                            {processing ? 'Memproses...' : 'Ya, Buat Order'}
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
         </AppLayout>
     );
 };

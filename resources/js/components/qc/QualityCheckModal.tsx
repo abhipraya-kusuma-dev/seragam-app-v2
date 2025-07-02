@@ -58,30 +58,71 @@ export default function QualityCheckModal({ isOpen, onClose, order }: QualityChe
     const [orderStatus, setOrderStatus] = useState<string>('in-progress');
     const [baseQuantities, setBaseQuantities] = useState<Record<number, number>>({});
 
+    const getMaxAllowedQty = (item: OrderItem) => {
+      const stockQty = item.item.stock?.qty ?? 0;
+      
+      if (order?.status === 'completed' || order?.status === 'cancelled') {
+          return item.qty_provided;
+      }
+      
+      if (order?.status === 'pending') {
+          const baseQty = baseQuantities[item.id] || 0;
+          return Math.min(item.qty_requested, baseQty + stockQty);
+      }
+      
+      return Math.min(item.qty_requested, stockQty);
+  };
+  
+    const determineStatus = (qtyProvided: number, qtyRequested: number) => {
+      if (qtyProvided === qtyRequested) return 'completed';
+      if (qtyProvided > 0 && qtyProvided < qtyRequested) return 'uncompleted';
+      if (qtyProvided === 0) return 'pending';
+      return 'in-progress';
+  };
+
     // Fixed: Added comma after spread operation
     useEcho(
-        'qc',
-        'StockUpdated',
-        (event: { item_id: number; new_stock: number }) => {
-            setOrderItems(prevItems => 
-                prevItems.map(item => {
-                    if (item.item.id === event.item_id) {
-                        return {
-                            ...item,
-                            item: {
-                                ...item.item,
-                                stock: {
-                                    ...(item.item.stock || {}), // Fixed: Added comma here
-                                    qty: event.new_stock
-                                }
-                            }
-                        };
-                    }
-                    return item;
-                })
-            );
-        }
-    );
+      'qc',
+      'StockUpdated',
+      (event: { item_id: number; new_stock: number }) => {
+          setOrderItems(prevItems => 
+              prevItems.map(item => {
+                  if (item.item.id === event.item_id) {
+                      // Update stock
+                      const updatedItem = {
+                          ...item,
+                          item: {
+                              ...item.item,
+                              stock: {
+                                  ...(item.item.stock || {}),
+                                  qty: event.new_stock
+                              }
+                          }
+                      };
+                      
+                      // Recalculate max allowed quantity
+                      const maxAllowed = getMaxAllowedQty(updatedItem);
+                      
+                      // Adjust qty_provided if it exceeds new max
+                      let newQty = item.qty_provided;
+                      if (item.qty_provided > maxAllowed) {
+                          newQty = maxAllowed;
+                      }
+                      
+                      // Update status based on new quantity
+                      const newStatus = determineStatus(newQty, item.qty_requested);
+                      
+                      return {
+                          ...updatedItem,
+                          qty_provided: newQty,
+                          status: newStatus
+                      };
+                  }
+                  return item;
+              })
+          );
+      }
+  );
 
     const capitalizeWords = (str: string) => {
         return str.replace(/\b\w/g, (char) => char.toUpperCase());
@@ -118,21 +159,6 @@ export default function QualityCheckModal({ isOpen, onClose, order }: QualityChe
     const hasInProgressItems = orderItems.some(
         item => item.status === 'in-progress'
     );
-
-    const getMaxAllowedQty = (item: OrderItem) => {
-        const stockQty = item.item.stock?.qty ?? 0;
-        
-        if (order.status === 'completed' || order.status === 'cancelled') {
-            return item.qty_provided;
-        }
-        
-        if (order.status === 'pending') {
-            const baseQty = baseQuantities[item.id] || 0;
-            return Math.min(item.qty_requested, baseQty + stockQty);
-        }
-        
-        return Math.min(item.qty_requested, stockQty);
-    };
 
     const updateItemQtyProvided = (itemId: number, qty: number) => {
         const updatedItems = orderItems.map(item => {
