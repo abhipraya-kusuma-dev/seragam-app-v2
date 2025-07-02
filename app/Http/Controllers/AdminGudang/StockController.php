@@ -11,6 +11,8 @@ use Maatwebsite\Excel\Excel;
 use Maatwebsite\Excel\Concerns\ToCollection;
 use Maatwebsite\Excel\Concerns\WithHeadingRow;
 use Illuminate\Support\Facades\Storage;
+use App\Events\QtyReducedGudang;
+use App\Events\StockUpdated;
 
 class StockController extends Controller
 {
@@ -41,6 +43,9 @@ class StockController extends Controller
             ['qty' => $validated['qty']]  // Attributes to update with or create with
         );
 
+        event( new QtyReducedGudang());
+        event(new StockUpdated($item->id, $validated['qty']));
+
         return redirect()->back()->with('success', 'Stok berhasil diperbarui');
     }
 
@@ -57,6 +62,9 @@ class StockController extends Controller
             );
         });
 
+        event( new QtyReducedGudang());
+        event(new StockUpdated($item->id, 0));
+
         return back()->with('success', 'Stok berhasil direset menjadi 0');
     }
 
@@ -66,9 +74,20 @@ class StockController extends Controller
             abort(403, 'Unauthorized');
         }
 
-        DB::transaction(function () {
+        $resetItems = DB::transaction(function () {
+            // Get all items before reset
+            $items = Item::with('stock')->get();
+            
+            // Perform reset
             Stock::query()->update(['qty' => 0]);
+            
+            return $items;
         });
+
+        event( new QtyReducedGudang());
+        foreach ($resetItems as $item) {
+            event(new StockUpdated($item->id, 0));
+        }
 
         return back()->with('success', 'Semua stok berhasil direset menjadi 0');
     }
@@ -82,8 +101,6 @@ class StockController extends Controller
         $request->validate([
             'excel_file' => 'required|file|mimes:xlsx,xls|max:2048',
         ]);
-
-        $path = $request->file('excel_file')->store('temp', 'public');
 
         try {
             $excel->import(new class implements ToCollection, WithHeadingRow {
@@ -123,6 +140,7 @@ class StockController extends Controller
 
                             // Simpan perubahan ke database
                             $stock->save();
+                            event(new StockUpdated($item->id, $stock->qty));
                             
                         }
                         DB::commit();
@@ -131,14 +149,11 @@ class StockController extends Controller
                         throw $e;
                     }
                 }
-            }, $path);
+            }, $request->file('excel_file'));
 
-            Storage::disk('public')->delete($path);
-            return back()->with('success', 'Stok berhasil diperbarui secara massal');
+            event( new QtyReducedGudang());
             
         } catch (\Exception $e) {
-            // This will now catch the "Item tidak ditemukan" error if it occurs
-            Storage::disk('public')->delete($path);
             return back()->with('error', 'Terjadi kesalahan: ' . $e->getMessage());
         }
     }

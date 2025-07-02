@@ -1,8 +1,10 @@
 <?php
 namespace App\Http\Controllers\AdminGudang;
+use App\Events\OrderCancelled;
 use App\Events\OrderReaded;
 use App\Events\OrderReturnedBack;
 use App\Events\OrderDownloaded;
+use App\Events\OrderStatusUpdated;
 use App\Http\Controllers\Controller;
 use App\Models\Order;
 use Illuminate\Http\Request;
@@ -10,6 +12,12 @@ use Inertia\Inertia;
 use Illuminate\Validation\ValidationException;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Exception;
+use Illuminate\Support\Facades\DB;
+use App\Models\Stock;;
+use App\Events\OrderCancelledGudang;
+use App\Events\OrderCancelledQc;
+use App\Events\OrderStatusUpdatedUkur;
+
 
 class OrderController extends Controller
 {
@@ -126,5 +134,32 @@ class OrderController extends Controller
         event(new OrderReturnedBack($order));
         
         return back()->with('success', 'Order telah dikirim ulang ke QC');
+    }
+
+    public function batalkanOrder(Request $request, Order $order)
+    {
+        DB::transaction(function () use ($order) {
+            // Restore stock for each item
+            foreach ($order->orderItems as $item) {
+                Stock::where('item_id', $item->item_id)
+                    ->increment('qty', $item->qty_requested);
+            }
+
+            // Update order status and reset quantities
+            $order->update(['status' => 'cancelled', 'notif_status' => true]);
+            $order->orderItems()->update([
+                'qty_provided' => 0,
+                'status' => 'pending'
+            ]);
+        });
+
+        event(new OrderCancelledGudang($order));
+        event(new OrderCancelledQc($order));
+        event(new OrderCancelled($order));
+        event(new OrderStatusUpdated($order));
+        event(new OrderStatusUpdatedUkur($order));
+
+
+        return redirect()->back()->with('success', 'Order berhasil dibatalkan');
     }
 }

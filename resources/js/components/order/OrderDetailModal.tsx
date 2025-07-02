@@ -3,11 +3,11 @@ import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Order } from '@/types/order';
-import { Download } from 'lucide-react';
+import { Download, XCircle } from 'lucide-react'; // Import XCircle icon
 import { useState } from 'react';
 import { router } from '@inertiajs/react';
 import jsPDF from 'jspdf';
-import { toast } from 'sonner'; // Import Sonner
+import { toast } from 'sonner';
 
 interface OrderDetailModalProps {
   isOpen: boolean;
@@ -18,6 +18,7 @@ interface OrderDetailModalProps {
 
 export default function OrderDetailModal({ isOpen, onClose, order, onNotificationUpdate }: OrderDetailModalProps) {
   const [isDownloading, setIsDownloading] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false); // Add submitting state
 
   if (!order) return null;
 
@@ -35,12 +36,36 @@ export default function OrderDetailModal({ isOpen, onClose, order, onNotificatio
       minute: '2-digit'
     });
   };
+  
+  // Handle cancel order
+  const handleCancelOrder = async () => {
+    if (!order) return;
+
+    setIsSubmitting(true);
+    // Assuming the route is /orders/{id}/cancel, adjust if necessary
+    router.patch(`/admin/gudang/orders/${order.id}/cancel`, {}, {
+      onSuccess: () => {
+        toast.success('Order berhasil dibatalkan', {
+          description: `Order #${order.order_number} telah dibatalkan`
+        });
+        onClose();
+      },
+      onError: (error: any) => {
+        console.error('Error cancelling order:', error);
+        toast.error('Gagal membatalkan order', {
+          description: error.message || 'Terjadi kesalahan saat membatalkan order'
+        });
+      },
+      onFinish: () => {
+        setIsSubmitting(false);
+      }
+    });
+  };
 
   const downloadOrderPDF = async (order: Order) => {
     setIsDownloading(true);
     
     try {
-      // Show downloading toast
       toast.info('Sedang membuat PDF...', {
         description: 'Mohon tunggu sebentar'
       });
@@ -165,10 +190,8 @@ export default function OrderDetailModal({ isOpen, onClose, order, onNotificatio
   
       doc.save(`${order.order_number}.pdf`);
   
-      // Update notification status
       await updateNotificationStatus(order.id);
       
-      // Show success toast
       toast.success('PDF berhasil diunduh', {
         description: `Struk order ${order.order_number} telah disimpan`
       });
@@ -209,7 +232,7 @@ export default function OrderDetailModal({ isOpen, onClose, order, onNotificatio
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="!w-[75vw] !max-w-[75vw] !h-[50vh] !max-h-[95vh] overflow-y-auto rounded-lg">
+      <DialogContent className="!w-[75vw] !max-w-[75vw] !h-auto !max-h-[95vh] overflow-y-auto rounded-lg">
         <DialogHeader>
           <DialogTitle className="text-xl font-bold">Detail Order</DialogTitle>
         </DialogHeader>
@@ -312,33 +335,47 @@ export default function OrderDetailModal({ isOpen, onClose, order, onNotificatio
             </div>
           </div>
 
-          <div className="flex justify-end gap-2">
-            <Button variant="outline" onClick={onClose}>
-              Tutup
-            </Button>
-            <Button 
-              variant="default" 
-              onClick={() => {
-                downloadOrderPDF(order);
-              }}
-              disabled={isDownloading}
-            >
-              {isDownloading ? (
-                <>
-                  <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-current" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                  </svg>
-                  Mengunduh...
-                </>
-              ) : (
-                <>
-                  <Download className="w-4 h-4 mr-2"/>
-                  Unduh PDF
-                </>
-              )}
-            </Button>
+          {/* === ACTION BUTTONS START === */}
+          <div className="flex flex-wrap justify-between items-center gap-2">
+            <div>
+              <Button 
+                variant="destructive"
+                onClick={handleCancelOrder}
+                disabled={isSubmitting || isDownloading || order.status === 'completed' || order.status === 'cancelled'}
+              >
+                <XCircle className="w-4 h-4 mr-2" />
+                {isSubmitting ? 'Membatalkan...' : 'Batalkan Order'}
+              </Button>
+            </div>
+            
+            <div className="flex gap-2">
+              <Button variant="outline" onClick={onClose}>
+                Tutup
+              </Button>
+              <Button 
+                variant="default" 
+                onClick={() => downloadOrderPDF(order)}
+                disabled={isDownloading || isSubmitting}
+              >
+                {isDownloading ? (
+                  <>
+                    <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-current" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    Mengunduh...
+                  </>
+                ) : (
+                  <>
+                    <Download className="w-4 h-4 mr-2"/>
+                    Unduh PDF
+                  </>
+                )}
+              </Button>
+            </div>
           </div>
+          {/* === ACTION BUTTONS END === */}
+
         </div>
       </DialogContent>
     </Dialog>

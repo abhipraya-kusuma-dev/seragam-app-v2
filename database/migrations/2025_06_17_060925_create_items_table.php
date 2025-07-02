@@ -14,7 +14,7 @@ return new class extends Migration
         Schema::create('items', function (Blueprint $table) {
             $table->id();
             $table->string('nama_item');
-            $table->enum('jenjang', ['SDIT', 'SDS', 'SMP', 'SMA', 'SMK', 'SD-SMP-SMA-SMK', 'SMP-SMA-SMK', 'SD-SMP-SMA', 'SMA-SMK']);
+            $table->enum('jenjang', ['SDIT', 'SDS', 'SMP', 'SMA', 'SMK', 'SD-SMP', 'SD-SMP-SMA-SMK', 'SMP-SMA-SMK', 'SD-SMP-SMA', 'SMA-SMK']);
             $table->enum('jenis_kelamin', ['Pria', 'Wanita', 'UNI']);
             $table->string('size');
             $table->timestamps();

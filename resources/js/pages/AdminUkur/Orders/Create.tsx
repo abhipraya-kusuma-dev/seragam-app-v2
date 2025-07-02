@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { Head, useForm, Link } from '@inertiajs/react';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -11,8 +11,6 @@ import { type PageProps } from '@inertiajs/core';
 import { toast } from 'sonner';
 import AppLayout from '@/layouts/app-layout';
 import { useEcho } from '@laravel/echo-react';
-
-// --- INTERFACES ---
 
 interface Item {
     id: number;
@@ -32,8 +30,7 @@ interface OrderFormData {
     jenjang: string;
     jenis_kelamin: string;
     items: SelectedItem[];
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    [key: string]: any
+    [key: string]: any;
 }
 
 interface Props extends PageProps {
@@ -41,19 +38,16 @@ interface Props extends PageProps {
     jenjangOptions: string[];
     jenisKelaminOptions: string[];
     nextOrderId?: number;
-    // FIX: Typed `errors` as a Record of string keys to string values,
-    // which matches Inertia's validation error structure.
     errors: Record<string, string>;
 }
-
-// --- HELPERS & COMPONENT ---
 
 const capitalizeWords = (str: string): string => {
     if (!str) return '';
     return str.toLowerCase().split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
 };
 
-export default function CreateOrder({ items, jenjangOptions, jenisKelaminOptions, nextOrderId, errors }: Props) {
+export default function CreateOrder({ items: initialItems, jenjangOptions, jenisKelaminOptions, nextOrderId, errors }: Props) {
+    const [items, setItems] = useState<Item[]>(initialItems);
     const { data, setData, post, processing } = useForm<OrderFormData>({
         nama_murid: '',
         jenjang: '',
@@ -63,6 +57,26 @@ export default function CreateOrder({ items, jenjangOptions, jenisKelaminOptions
     const [search, setSearch] = useState('');
     const [currentNextOrderId, setCurrentNextOrderId] = useState<number | undefined>(nextOrderId);
 
+    // Listen for stock updates
+    useEcho(
+        'ukur',
+        'StockUpdated',
+        (event: { item_id: number; new_stock: number }) => {
+            // Update available items list
+            setItems(prevItems => 
+                prevItems.map(item => 
+                    item.id === event.item_id ? { ...item, stock: event.new_stock } : item
+                )
+            );
+            
+            // Update selected items in form
+            setData('items', data.items.map(item => 
+                item.id === event.item_id ? { ...item, stock: event.new_stock } : item
+            ));
+        }
+    );
+
+    // Listen for new order number updates
     useEcho(
         'ukur',
         'NewOrderNumber',

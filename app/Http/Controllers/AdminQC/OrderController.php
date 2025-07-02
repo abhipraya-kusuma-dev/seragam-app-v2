@@ -7,11 +7,13 @@ use App\Models\Order;
 use App\Models\OrderItem;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use App\Models\Stock;
-use App\Events\OrderReturned;
+use App\Models\Stock;;
 use App\Events\OrderStatusUpdated;
+use App\Events\OrderReturned;
 use App\Events\OrderStatusUpdatedUkur;
 use App\Events\OrderCancelled;
+use App\Events\QtyReducedGudang;
+use App\Events\StockUpdated;
 
 class OrderController extends Controller
 {
@@ -112,17 +114,25 @@ class OrderController extends Controller
                     throw new \Exception("Stok tidak mencukupi untuk item: ".$orderItem->item->nama_item);
                 }
                 
-                // Reduce stock by the delta amount
                 if ($stockReduction > 0) {
                     $stock->decrement('qty', $stockReduction);
+                    
+                    // Record stock update for broadcasting
+                    $stockUpdates[$orderItem->item_id] = $stock->fresh()->qty;
                 }
-                
+
                 // Update order item
                 $orderItem->update([
                     'qty_provided' => $newQty,
                     'status' => $this->getItemStatus($newQty, $orderItem->qty_requested)
                 ]);
             }
+
+            foreach ($stockUpdates as $item_id => $new_stock) {
+                event(new StockUpdated($item_id, $new_stock));
+            }
+
+            event(new QtyReducedGudang());
 
             $order->load('orderItems');
             $order->updateStatus();

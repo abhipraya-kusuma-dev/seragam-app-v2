@@ -60,6 +60,8 @@ Route::middleware(['auth'])->prefix('/admin/gudang')->group(function () {
         ->name('admin-gudang.orders.index');
     Route::patch('/orders/{order}/notification-status', [AdminGudangOrderController::class, 'updateNotificationStatus'])
         ->name('admin-gudang.orders.notification-status');
+    Route::patch('/orders/{order}/cancel', [AdminGudangOrderController::class, 'batalkanOrder'])
+        ->name('admin-gudang.orders.cancel');
     Route::post('/orders/{order}/resend', [AdminGudangOrderController::class, 'resendToQc'])
         ->name('admin-gudang.orders.resend');
 });
