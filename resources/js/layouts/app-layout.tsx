@@ -65,7 +65,28 @@ function RealtimeNotificationHandler() {
             }
         }
     );
-
+    useEcho(
+        'qc',
+        'OrderCancelledQc',
+        (event: {order: Order}) => {
+            if(auth.user?.role === 'admin_qc') {
+                toast.warning('Ada order yang dibatalkan', {
+                    description: `Order #${event.order.order_number} dibatalkan`,
+                });
+            }
+        }
+    );
+    useEcho(
+        'qc',
+        'OrderCancelledGudang',
+        (event: {order: Order}) => {
+            if(auth.user?.role === 'admin_gudang') {
+                toast.warning('Ada order yang dibatalkan', {
+                    description: `Order #${event.order.order_number} dibatalkan`,
+                });
+            }
+        }
+    );
     // TODO: Tambahkan listener untuk alur lain di sini nanti
     // (misalnya, notifikasi dari Gudang ke QC)
 

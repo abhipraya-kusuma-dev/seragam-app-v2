@@ -7,11 +7,13 @@ use App\Models\Order;
 use App\Models\OrderItem;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use App\Models\Stock;
-use App\Events\OrderReturned;
+use App\Models\Stock;;
 use App\Events\OrderStatusUpdated;
+use App\Events\OrderReturned;
 use App\Events\OrderStatusUpdatedUkur;
 use App\Events\OrderCancelled;
+use App\Events\QtyReducedGudang;
+use App\Events\StockUpdated;
 
 class OrderController extends Controller
 {
@@ -86,52 +88,58 @@ class OrderController extends Controller
     }
 
     public function selesaikanQC(Request $request, Order $order)
-    {
-        $request->validate([
-            'items' => 'required|array',
-            'items.*.id' => 'required|exists:order_items,id',
-            'items.*.qty_provided' => 'required|integer|min:0',
-        ]);
+{
+    $request->validate([
+        'items' => 'required|array',
+        'items.*.id' => 'required|exists:order_items,id',
+        'items.*.qty_provided' => 'required|integer|min:0',
+    ]);
 
-        DB::transaction(function () use ($request, $order) {
-            foreach ($request->items as $itemData) {
-                $orderItem = OrderItem::find($itemData['id']);
-                $newQty = $itemData['qty_provided'];
-                
-                // For pending orders, use the delta for stock reduction
-                $stockReduction = $newQty;
-                if ($order->status === 'pending' && isset($itemData['base_qty'])) {
-                    $stockReduction = $newQty - $itemData['base_qty'];
-                }
-                
-                // Get current stock
-                $stock = $orderItem->item->stock;
-                
-                // Validate stock availability for the delta
-                if ($stockReduction > ($stock->qty ?? 0)) {
-                    throw new \Exception("Stok tidak mencukupi untuk item: ".$orderItem->item->nama_item);
-                }
-                
-                // Reduce stock by the delta amount
-                if ($stockReduction > 0) {
-                    $stock->decrement('qty', $stockReduction);
-                }
-                
-                // Update order item
-                $orderItem->update([
-                    'qty_provided' => $newQty,
-                    'status' => $this->getItemStatus($newQty, $orderItem->qty_requested)
-                ]);
+    $stockUpdates = DB::transaction(function () use ($request, $order) {
+        $updates = [];
+        
+        foreach ($request->items as $itemData) {
+            $orderItem = OrderItem::find($itemData['id']);
+            $newQty = $itemData['qty_provided'];
+            
+            $stockReduction = $newQty;
+            if ($order->status === 'pending' && isset($itemData['base_qty'])) {
+                $stockReduction = $newQty - $itemData['base_qty'];
+            }
+            
+            $stock = $orderItem->item->stock;
+            
+            if ($stockReduction > ($stock->qty ?? 0)) {
+                throw new \Exception("Stok tidak mencukupi untuk item: ".$orderItem->item->nama_item);
+            }
+            
+            if ($stockReduction > 0) {
+                $stock->decrement('qty', $stockReduction);
+                $updates[$orderItem->item_id] = $stock->fresh()->qty;
             }
 
-            $order->load('orderItems');
-            $order->updateStatus();
-            event(new OrderStatusUpdated($order));
-            event(new OrderStatusUpdatedUkur($order));
-        });
+            $orderItem->update([
+                'qty_provided' => $newQty,
+                'status' => $this->getItemStatus($newQty, $orderItem->qty_requested)
+            ]);
+        }
 
-        return redirect()->back()->with('success', 'Proses QC berhasil diselesaikan');
+        event(new QtyReducedGudang());
+        $order->load('orderItems');
+        $order->updateStatus();
+        event(new OrderStatusUpdated($order));
+        event(new OrderStatusUpdatedUkur($order));
+        
+        return $updates;
+    });
+
+    // Broadcast stock updates after successful transaction
+    foreach ($stockUpdates as $item_id => $new_stock) {
+        event(new StockUpdated($item_id, $new_stock));
     }
+
+    return redirect()->back()->with('success', 'Proses QC berhasil diselesaikan');
+}
 
     private function getItemStatus($provided, $requested)
     {

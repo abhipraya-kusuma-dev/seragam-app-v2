@@ -27,8 +27,6 @@ import { cn } from '@/lib/utils';
 import { useEcho } from '@laravel/echo-react';
 import { toast } from 'sonner';
 
-// --- TYPE DEFINITIONS ---
-
 export interface Order {
     id: number;
     order_number: string;
@@ -60,14 +58,13 @@ export interface OrderItem {
         jenis_kelamin: string;
         size: string;
         stock?: {
-            id: number;
-            item_id: number;
+            id?: number;       // Make optional
+            item_id?: number;  // Make optional
             qty: number;
         };
     };
 }
 
-// Generic Paginator interface for Laravel's pagination response
 export interface Paginator<T> {
     data: T[];
     links: {
@@ -112,8 +109,6 @@ interface Props extends PageProps {
     };
 }
 
-// --- COMPONENT ---
-
 export default function AdminQcDashboard({
     auth,
     inProgressOrders,
@@ -133,12 +128,11 @@ export default function AdminQcDashboard({
     const [jenjangFilter, setJenjangFilter] = useState('');
     const [genderFilter, setGenderFilter] = useState('');
     const [activeOrderNumbers, setActiveOrderNumbers] = useState<string[]>([]);
+    const [modalKey, setModalKey] = useState(Date.now());
 
-    // --- useEcho IMPLEMENTATION ---
     useEcho(
         'qc',
         'OrderReaded',
-        // eslint-disable-next-line @typescript-eslint/no-unused-vars
         (_event: { order: Order }) => {
             if (auth.user?.role === 'admin_qc') {
                 router.reload({
@@ -147,10 +141,10 @@ export default function AdminQcDashboard({
             }
         }
     );
+    
     useEcho(
         'qc',
         'OrderReturnedBack',
-        // eslint-disable-next-line @typescript-eslint/no-unused-vars
         (_event: { order: Order }) => {
             if (auth.user?.role === 'admin_qc') {
                 router.reload({
@@ -159,18 +153,73 @@ export default function AdminQcDashboard({
             }
         }
     );
+    
     useEcho(
         'qc',
-        'OrderStatusUpdated',
-        // eslint-disable-next-line @typescript-eslint/no-unused-vars
-        (_event: { order: Order }) => {
-            if (auth.user?.role === 'admin_qc') {
-                router.reload({
-                    only: ['inProgressOrders', 'pendingOrders', 'completedOrders', 'returnedOrders', 'cancelledOrders', 'qcStats'],
+        'StockUpdated',
+        (event: { item_id: number; new_stock: number }) => {
+            // Update modal if it's open
+            if (isModalOpen && selectedOrder) {
+                setSelectedOrder(prevOrder => {
+                    if (!prevOrder) return prevOrder;
+                    
+                    return {
+                        ...prevOrder,
+                        order_items: prevOrder.order_items.map(item => {
+                            if (item.item.id === event.item_id) {
+                                return {
+                                    ...item,
+                                    item: {
+                                        ...item.item,
+                                        stock: {
+                                            ...item.item.stock,
+                                            qty: event.new_stock
+                                        }
+                                    }
+                                };
+                            }
+                            return item;
+                        })
+                    };
                 });
             }
         }
     );
+    
+    useEcho(
+        'qc',
+        'OrderStatusUpdated',
+        (_event: { order: Order }) => { 
+            if (auth.user?.role === 'admin_qc') {
+                router.reload({
+                    only: ['inProgressOrders', 'pendingOrders', 'completedOrders', 'returnedOrders', 'cancelledOrders', 'qcStats'],
+                    onSuccess: (page) => {
+                        if (isModalOpen && selectedOrder) {
+                            const newProps = page.props as unknown as Props;
+                            
+                            // Combine all fresh order lists
+                            const allOrders = [
+                                ...(newProps.inProgressOrders?.data || []),
+                                ...(newProps.pendingOrders?.data || []),
+                                ...(newProps.completedOrders?.data || []),
+                                ...(newProps.returnedOrders?.data || []),
+                                ...(newProps.cancelledOrders?.data || [])
+                            ];
+    
+                            // Find the updated order
+                            const updatedOrderForModal = allOrders.find(o => o.id === selectedOrder.id);
+    
+                            if (updatedOrderForModal) {
+                                setSelectedOrder(updatedOrderForModal);
+                                setModalKey(Date.now());
+                            }
+                        }
+                    }
+                });
+            }
+        }
+    );
+    
     useEcho(
         'qc',
         'TriggerPopupQc',
@@ -185,7 +234,6 @@ export default function AdminQcDashboard({
         }
     );
 
-    // --- SIDE EFFECTS ---
     useEffect(() => {
         const debouncedSearch = debounce(() => {
             router.get(
@@ -209,7 +257,6 @@ export default function AdminQcDashboard({
         return () => debouncedSearch.cancel();
     }, [activeTab, searchTerm, jenjangFilter, genderFilter, perPage]);
 
-    // --- HANDLERS ---
     const handleOpenModal = async (order: Order) => {
         setOpeningQcModalId(order.id);
         try {
@@ -252,7 +299,6 @@ export default function AdminQcDashboard({
 
     const logoutForm = useForm();
 
-    // --- HELPERS ---
     const formatTableDate = (dateString: string) => {
         return new Date(dateString).toLocaleDateString('id-ID', {
             day: '2-digit',
@@ -265,7 +311,6 @@ export default function AdminQcDashboard({
 
     const inProgressOrdersCount = qcStats?.inProgress || 0;
 
-    // --- RENDER FUNCTIONS ---
     const renderPagination = (paginator: Paginator<Order>) => {
         if (!paginator || paginator.data.length === 0) return null;
 
@@ -332,7 +377,6 @@ export default function AdminQcDashboard({
         );
     };
     
-    // Helper to render a table for a specific order type
     const renderOrderTable = (
         ordersPaginator: Paginator<Order> | undefined,
         statusBadge: React.ReactNode,
@@ -407,13 +451,10 @@ export default function AdminQcDashboard({
         );
     };
 
-
-    // --- JSX ---
     return (
         <AppLayout>
             <Head title="Dashboard Admin QC" />
             <div className="container mx-auto py-8 px-4 sm:px-6 lg:px-8 space-y-8">
-                {/* Header */}
                 <div className="flex justify-between items-center">
                     <div>
                         <h1 className="text-3xl font-bold">Dashboard Quality Control</h1>
@@ -435,7 +476,6 @@ export default function AdminQcDashboard({
                     </div>
                 </div>
 
-                {/* Statistics Cards */}
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                     <Card>
                         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -485,7 +525,6 @@ export default function AdminQcDashboard({
                     </Card>
                 </div>
                 
-                {/* Main Content Tabs */}
                 <Tabs defaultValue="in-progress" className="space-y-6" onValueChange={handleTabChange}>
                     <TabsList className="grid w-full grid-cols-5">
                          <TabsTrigger value="in-progress" className="flex items-center gap-2">
@@ -510,7 +549,6 @@ export default function AdminQcDashboard({
                          </TabsTrigger>
                     </TabsList>
 
-                    {/* Filter Section */}
                     <Card className="shadow-sm">
                         <CardContent className="pt-6">
                             <div className="flex flex-wrap gap-6 items-end">
@@ -558,7 +596,6 @@ export default function AdminQcDashboard({
                         </CardContent>
                     </Card>
                     
-                    {/* Tab Content Panels */}
                     <TabsContent value="in-progress">
                         <Card>
                             <CardHeader>
@@ -661,8 +698,8 @@ export default function AdminQcDashboard({
                 </Tabs>
             </div>
 
-            {/* Quality Check Modal */}
             <QualityCheckModal
+                key={modalKey}
                 isOpen={isModalOpen}
                 onClose={handleCloseModal}
                 order={selectedOrder}

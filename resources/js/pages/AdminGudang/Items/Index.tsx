@@ -3,9 +3,9 @@ import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Link } from '@inertiajs/react';
-import { ArrowLeft, Plus, Upload, RotateCcw, Edit } from 'lucide-react';
+import { ArrowLeft, Plus, Upload, RotateCcw, Edit, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
@@ -15,13 +15,22 @@ import { Pagination, PaginationContent, PaginationItem, PaginationNext, Paginati
 import { cn } from '@/lib/utils';
 import AppLayout from '@/layouts/app-layout';
 import { toast } from 'sonner';
+import { useEcho } from '@laravel/echo-react';
+import { usePage } from '@inertiajs/react';
+import { type PageProps } from '@inertiajs/core';
 
 // Utility function to capitalize first letter of each word
 const capitalizeWords = (str: string) => {
     return str.replace(/\b\w/g, (char) => char.toUpperCase());
 };
 
-interface Props {
+interface Props extends PageProps {
+    auth: {
+        user: {
+            username: string;
+            role: string;
+        };
+    };
     items: {
         data: Array<{
             id: number;
@@ -41,6 +50,14 @@ interface Props {
         current_page: number;
         last_page: number;
     };
+    lowStockItems: Array<{ // Add this prop for global low stock items
+        id: number;
+        nama_item: string;
+        jenjang: string;
+        jenis_kelamin: string;
+        size: string;
+        qty: number;
+    }>;
     filters: {
         search?: string;
         jenjang?: string;
@@ -51,17 +68,45 @@ interface Props {
     templateUrl: string;
 }
 
-const ItemsIndex = ({ items, filters, jenjangOptions, jenisKelaminOptions, templateUrl }: Props) => {
+const ItemsIndex = ({ 
+    items, 
+    filters, 
+    jenjangOptions, 
+    jenisKelaminOptions, 
+    templateUrl,
+    lowStockItems: globalLowStockItems // Rename to avoid confusion
+}: Props) => {
     const [search, setSearch] = useState(filters.search || '');
     const [jenjang, setJenjang] = useState(filters.jenjang || 'all');
     const [jenisKelamin, setJenisKelamin] = useState(filters.jenis_kelamin || 'all');
     const [isDialogOpen, setIsDialogOpen] = useState(false);
     const [isResetAllDialogOpen, setIsResetAllDialogOpen] = useState(false);
     const [itemToReset, setItemToReset] = useState<number | null>(null);
+    const [isLowStockDialogOpen, setIsLowStockDialogOpen] = useState(false);
     
-    const { data, setData, post, errors, reset, progress } = useForm({
+    // Add processing state from useForm
+    const { data, setData, post, errors, reset, progress, processing } = useForm({
         excel_file: null as File | null,
     });
+
+    const { auth } = usePage<Props>().props;
+
+    // Create a Set of low stock item IDs for quick lookup
+    const lowStockItemIds = useMemo(() => 
+        new Set(globalLowStockItems.map(item => item.id)), 
+        [globalLowStockItems]
+    );
+
+    // Add Echo listener for stock reduction events
+    useEcho(
+        'gudang',
+        'QtyReducedGudang',
+        () => {
+            if (auth.user?.role === 'admin_gudang') {
+                router.reload({ only: ['items', 'lowStockItems'] });
+            }
+        }
+    );
 
     useEffect(() => {
         const params = {
@@ -82,42 +127,29 @@ const ItemsIndex = ({ items, filters, jenjangOptions, jenisKelaminOptions, templ
     }, [search, jenjang, jenisKelamin]);
 
     const handleDownloadTemplate = async (e: React.MouseEvent<HTMLAnchorElement>) => {
-        // 1. Mencegah link default berjalan
         e.preventDefault();
-
-        // 2. Tampilkan toast loading dan simpan ID-nya
         const toastId = toast.loading('Sedang menyiapkan file template...');
 
         try {
-            // 3. Ambil file dari server
             const response = await fetch(templateUrl);
-
             if (!response.ok) {
-                // Lemparkan error jika server gagal merespon (misal: 500 Internal Server Error)
                 throw new Error('Gagal mengambil file dari server.');
             }
 
-            // 4. Ubah respons menjadi blob (data biner)
             const blob = await response.blob();
-
-            // 5. Buat URL sementara untuk blob tersebut
             const url = window.URL.createObjectURL(blob);
             
-            // 6. Buat link sementara, klik, lalu hapus untuk memicu download
             const a = document.createElement('a');
             a.href = url;
-            a.download = 'template_stok.xlsx'; // Nama file yang akan diunduh
+            a.download = 'template_stok.xlsx';
             document.body.appendChild(a);
             a.click();
             a.remove();
-            window.URL.revokeObjectURL(url); // Hapus URL sementara dari memori
+            window.URL.revokeObjectURL(url);
 
-            // 7. Update toast menjadi success
             toast.success('Template berhasil diunduh!', { id: toastId });
-
         } catch (error) {
             console.error('Download template error:', error);
-            // 8. Jika terjadi error, update toast menjadi error
             toast.error('Gagal menyiapkan file.', {
                 description: 'Terjadi kesalahan saat mencoba mengunduh.',
                 id: toastId,
@@ -127,7 +159,6 @@ const ItemsIndex = ({ items, filters, jenjangOptions, jenisKelaminOptions, templ
 
     const handleBulkSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        // 1. Show a loading toast when the submission starts
         const toastId = toast.loading('Mengunggah file dan memproses stok...');
 
         post(route('admin-gudang.items.bulk-update-stock'), {
@@ -137,7 +168,6 @@ const ItemsIndex = ({ items, filters, jenjangOptions, jenisKelaminOptions, templ
                 setIsDialogOpen(false);
                 reset(); 
             },
-
             onError: (errors) => {
                 if (errors.excel_file) {
                     toast.error(errors.excel_file, { id: toastId });
@@ -175,7 +205,6 @@ const ItemsIndex = ({ items, filters, jenjangOptions, jenisKelaminOptions, templ
                 </div>
                 
                 <div className="flex gap-2">
-                    {/* Bulk Update Button */}
                     <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
                         <DialogTrigger asChild>
                             <Button variant="outline" className="flex items-center gap-2">
@@ -232,18 +261,47 @@ const ItemsIndex = ({ items, filters, jenjangOptions, jenisKelaminOptions, templ
                                         type="button" 
                                         variant="outline"
                                         onClick={() => setIsDialogOpen(false)}
+                                        disabled={processing}
                                     >
                                         Batal
                                     </Button>
-                                    <Button type="submit" disabled={!data.excel_file}>
-                                        Update Stok
+                                    <Button 
+                                        type="submit" 
+                                        disabled={!data.excel_file || processing}
+                                    >
+                                        {processing ? (
+                                            <>
+                                                <svg 
+                                                    className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" 
+                                                    xmlns="http://www.w3.org/2000/svg" 
+                                                    fill="none" 
+                                                    viewBox="0 0 24 24"
+                                                >
+                                                    <circle 
+                                                        className="opacity-25" 
+                                                        cx="12" 
+                                                        cy="12" 
+                                                        r="10" 
+                                                        stroke="currentColor" 
+                                                        strokeWidth="4"
+                                                    ></circle>
+                                                    <path 
+                                                        className="opacity-75" 
+                                                        fill="currentColor" 
+                                                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                                                    ></path>
+                                                </svg>
+                                                Memproses...
+                                            </>
+                                        ) : (
+                                            'Update Stok'
+                                        )}
                                     </Button>
                                 </DialogFooter>
                             </form>
                         </DialogContent>
                     </Dialog>
                     
-                    {/* Reset All Stock Button */}
                     <AlertDialog open={isResetAllDialogOpen} onOpenChange={setIsResetAllDialogOpen}>
                         <AlertDialogTrigger asChild>
                             <Button variant="destructive" className="flex items-center gap-2">
@@ -277,6 +335,84 @@ const ItemsIndex = ({ items, filters, jenjangOptions, jenisKelaminOptions, templ
                     </Link>
                 </div>
             </div>
+
+            {globalLowStockItems.length > 0 && (
+                <div 
+                    className="mb-6 bg-yellow-50 border-l-4 border-yellow-400 p-4 rounded-md cursor-pointer hover:bg-yellow-100 transition-colors"
+                    onClick={() => setIsLowStockDialogOpen(true)}
+                >
+                    <div className="flex items-center">
+                        <div className="flex-shrink-0">
+                            <AlertCircle className="h-5 w-5 text-yellow-500" aria-hidden="true" />
+                        </div>
+                        <div className="ml-3">
+                            <p className="text-sm text-yellow-700">
+                                <span className="font-medium">Peringatan Stok Rendah!</span>{' '}
+                                Terdapat {globalLowStockItems.length} item dengan stok ≤ 10. 
+                                <span className="font-medium underline ml-1">Klik untuk melihat detail</span>
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            <Dialog open={isLowStockDialogOpen} onOpenChange={setIsLowStockDialogOpen}>
+                <DialogContent className="sm:max-w-2xl">
+                    <DialogHeader>
+                        <DialogTitle className="flex items-center gap-2 text-yellow-700">
+                            <AlertCircle className="h-5 w-5 text-yellow-500" />
+                            Item dengan Stok Rendah (≤ 10)
+                        </DialogTitle>
+                        <DialogDescription>
+                            Berikut adalah semua item dengan stok rendah di sistem:
+                        </DialogDescription>
+                    </DialogHeader>
+                    
+                    <div className="max-h-[60vh] overflow-y-auto">
+                        <Table>
+                            <TableHeader>
+                                <TableRow>
+                                    <TableHead>Nama Item</TableHead>
+                                    <TableHead>Jenjang</TableHead>
+                                    <TableHead>Jenis Kelamin</TableHead>
+                                    <TableHead>Size</TableHead>
+                                    <TableHead>Stok</TableHead>
+                                </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                                {globalLowStockItems.length === 0 ? (
+                                    <TableRow>
+                                        <TableCell colSpan={5} className="text-center py-4">
+                                            Tidak ada item dengan stok rendah
+                                        </TableCell>
+                                    </TableRow>
+                                ) : (
+                                    globalLowStockItems.map((item) => (
+                                        <TableRow key={item.id} className={item.qty <= 10 ? '' : ''}>
+                                            <TableCell className='text-orange-400 flex items-center gap-1'>{capitalizeWords(item.nama_item)} <AlertCircle className="h-4 w-4 mr-1" /></TableCell>
+                                            <TableCell>{item.jenjang}</TableCell>
+                                            <TableCell>{item.jenis_kelamin}</TableCell>
+                                            <TableCell>{item.size}</TableCell>
+                                            <TableCell className="text-orange-400 font-medium">
+                                                <div className="flex items-center">
+                                                    
+                                                    {item.qty}
+                                                </div>
+                                            </TableCell>
+                                        </TableRow>
+                                    ))
+                                )}
+                            </TableBody>
+                        </Table>
+                    </div>
+                    
+                    <DialogFooter>
+                        <Button onClick={() => setIsLowStockDialogOpen(false)}>
+                            Tutup
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
 
             <Card className="w-full">
                 <div className="p-4">
@@ -326,14 +462,23 @@ const ItemsIndex = ({ items, filters, jenjangOptions, jenisKelaminOptions, templ
                             </TableRow>
                         </TableHeader>
                         <TableBody>
-                            {items.data.map((item) => (
+                        {items.data.map((item) => {
+                            const qty = item.stock?.qty || 0;
+                            const isLowStock = lowStockItemIds.has(item.id);
+                            
+                            return (
                                 <TableRow key={item.id}>
-                                    <TableCell>{capitalizeWords(item.nama_item)}</TableCell>
+                                    <TableCell className={isLowStock ? "text-orange-400 font-medium" : ""}>
+                                        <div className='flex items-center gap-1'>
+                                            {capitalizeWords(item.nama_item)}
+                                            {isLowStock && <AlertCircle className="h-4 w-4" />}
+                                        </div>
+                                    </TableCell>
                                     <TableCell>{item.jenjang}</TableCell>
                                     <TableCell>{item.jenis_kelamin}</TableCell>
                                     <TableCell>{item.size}</TableCell>
-                                    <TableCell>
-                                        {item.stock?.qty || 0}
+                                    <TableCell className={isLowStock ? "text-orange-400 font-medium" : ""}>
+                                        {qty}
                                     </TableCell>
                                     <TableCell className="flex gap-2">
                                         <Link 
@@ -344,7 +489,6 @@ const ItemsIndex = ({ items, filters, jenjangOptions, jenisKelaminOptions, templ
                                             Edit
                                         </Link>
                                         
-                                        {/* Per-item reset button */}
                                         <AlertDialog 
                                             open={itemToReset === item.id} 
                                             onOpenChange={(open) => open ? setItemToReset(item.id) : setItemToReset(null)}
@@ -375,14 +519,13 @@ const ItemsIndex = ({ items, filters, jenjangOptions, jenisKelaminOptions, templ
                                         </AlertDialog>
                                     </TableCell>
                                 </TableRow>
-                            ))}
-                        </TableBody>
+                            );
+                        })}
+                    </TableBody>
                     </Table>
 
-                    {/* Pagination Component */}
                     <Pagination className="mt-6">
                         <PaginationContent>
-                            {/* Previous Page Button */}
                             <PaginationItem>
                             {items.links[0].url ? (
                                 <div
@@ -409,7 +552,6 @@ const ItemsIndex = ({ items, filters, jenjangOptions, jenisKelaminOptions, templ
                             )}
                             </PaginationItem>
 
-                            {/* Page Numbers */}
                             {items.links.slice(1, -1).map((link, index) => (
                             <PaginationItem key={index}>
                                 {link.url ? (
@@ -439,7 +581,6 @@ const ItemsIndex = ({ items, filters, jenjangOptions, jenisKelaminOptions, templ
                             </PaginationItem>
                             ))}
 
-                            {/* Next Page Button */}
                             <PaginationItem>
                             {items.links[items.links.length - 1].url ? (
                                 <div
