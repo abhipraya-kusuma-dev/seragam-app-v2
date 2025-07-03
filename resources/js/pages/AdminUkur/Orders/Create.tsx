@@ -257,10 +257,11 @@ export default function CreateOrder({ items: initialItems, jenjangOptions, jenis
                             ) : (
                                 <div className="border rounded-md">
                                     <Table>
-                                        <TableHeader><TableRow><TableHead>Nama Item</TableHead><TableHead>Jenjang</TableHead><TableHead>Jenis Kelamin</TableHead><TableHead>Ukuran</TableHead><TableHead>Jumlah</TableHead><TableHead>Stok</TableHead><TableHead>Aksi</TableHead></TableRow></TableHeader>
+                                        <TableHeader><TableRow><TableHead>No.</TableHead><TableHead>Nama Item</TableHead><TableHead>Jenjang</TableHead><TableHead>Jenis Kelamin</TableHead><TableHead>Ukuran</TableHead><TableHead>Jumlah</TableHead><TableHead>Stok</TableHead><TableHead>Aksi</TableHead></TableRow></TableHeader>
                                         <TableBody>
                                             {data.items.map((item: SelectedItem, index) => (
                                                 <TableRow key={index}>
+                                                    <TableCell>{index + 1}</TableCell>
                                                     <TableCell>{capitalizeWords(item.nama_item)}</TableCell>
                                                     <TableCell>{item.jenjang}</TableCell>
                                                     <TableCell>{item.jenis_kelamin}</TableCell>
