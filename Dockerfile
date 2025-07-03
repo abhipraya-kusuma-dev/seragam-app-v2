@@ -19,9 +19,14 @@ COPY . .
 # Build Tailwind / JS assets
 RUN npm run build
 
+# ============================
+# Stage 2: PostgreSQL
+# ============================
+FROM postgres:latest as initdb
+COPY docker/config/initdb/init-user-db.sh /docker-entrypoint-initdb.d/init-user-db.sh
 
 # ============================
-# Stage 2: PHP backend
+# Stage 3: PHP backend
 # ============================
 FROM php:8.2-fpm-alpine as backend
 
