@@ -66,19 +66,22 @@ export default function CreateOrder({ items: initialItems, jenjangOptions, jenis
         'ukur',
         'StockUpdated',
         (event: { item_id: number; new_stock: number }) => {
-            // Update available items list
+            // Update available items list (Ini sudah benar)
             setItems(prevItems => 
                 prevItems.map(item => 
                     item.id === event.item_id ? { ...item, stock: event.new_stock } : item
                 )
             );
             
-            // Update selected items in form
-            setData('items', data.items.map(item => 
-                item.id === event.item_id ? { ...item, stock: event.new_stock } : item
-            ));
+            // PERBAIKAN: Gunakan functional update untuk setData
+            setData(prevData => ({
+                ...prevData, // Salin semua data sebelumnya (nama_murid, jenjang, dll)
+                items: prevData.items.map(item => // Gunakan prevData.items yang terbaru
+                    item.id === event.item_id ? { ...item, stock: event.new_stock } : item
+                ),
+            }));
         }
-    );
+    )
 
     // Listen for new order number updates
     useEcho(
@@ -188,7 +191,7 @@ export default function CreateOrder({ items: initialItems, jenjangOptions, jenis
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                             <div>
                                 <Label htmlFor="nama_murid">Nama Murid</Label>
-                                <Input id="nama_murid" value={data.nama_murid} onChange={e => setData('nama_murid', e.target.value)} className="mt-1" placeholder="Nama lengkap murid" />
+                                <Input id="nama_murid" value={data.nama_murid} onChange={e => setData('nama_murid', e.target.value.toUpperCase())} className="mt-1" placeholder="Nama lengkap murid" />
                                 {errors.nama_murid && <p className="mt-1 text-sm text-red-500">{errors.nama_murid}</p>}
                             </div>
                             <div>
