@@ -14,6 +14,8 @@ RUN npm install
 
 # Copy the rest of the code
 COPY docker/env/.env.prod .env
+COPY docker/env/.env.db .env.db
+COPY docker/env/.env.dev .env.dev
 COPY . .
 
 # Build Tailwind / JS assets
