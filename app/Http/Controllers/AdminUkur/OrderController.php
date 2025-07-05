@@ -24,7 +24,17 @@ class OrderController extends Controller
             abort(403, 'Unauthorized');
         }
 
-        $orders = Order::latest()->paginate(10);
+        // Fetch all orders for the main list
+        $orders = Order::where('return_status', false)->latest()->paginate(10, ['*'], 'ordersPage');
+
+        // Fetch orders with return_status = true
+        $returnedOrders = Order::where('return_status', true)->latest()->paginate(10, ['*'], 'returnedOrdersPage');
+
+        // Get counts for each tab
+        $counts = [
+            'all' => Order::where('return_status', false)->count(),
+            'returned' => Order::where('return_status', true)->count(),
+        ];
 
         return inertia('AdminUkur/Orders/Index', [
             'orders' => [
@@ -44,6 +54,24 @@ class OrderController extends Controller
                     'next' => $orders->nextPageUrl(),
                 ],
             ],
+            'returnedOrders' => [
+                'data' => $returnedOrders->items(),
+                'meta' => [
+                    'current_page' => $returnedOrders->currentPage(),
+                    'last_page' => $returnedOrders->lastPage(),
+                    'from' => $returnedOrders->firstItem(),
+                    'to' => $returnedOrders->lastItem(),
+                    'total' => $returnedOrders->total(),
+                    'links' => $returnedOrders->linkCollection()->toArray(),
+                ],
+                'links' => [
+                    'first' => $returnedOrders->url(1),
+                    'last' => $returnedOrders->url($returnedOrders->lastPage()),
+                    'prev' => $returnedOrders->previousPageUrl(),
+                    'next' => $returnedOrders->nextPageUrl(),
+                ],
+            ],
+            'counts' => $counts,
         ]);
     }
 
