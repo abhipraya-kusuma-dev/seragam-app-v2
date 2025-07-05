@@ -14,19 +14,6 @@ services:
     depends_on:
       - pgsql
 
-  app_dev:
-    build:
-      context: .
-      target: backend
-    container_name: SS_BE_DEV
-    ports:
-      - "8002:8001"
-      - "8081:8080"
-    volumes:
-      - ./docker/env/.env.dev:/var/www/.env
-    depends_on:
-      - pgsql
-
   pgsql:
     build:
       context: .

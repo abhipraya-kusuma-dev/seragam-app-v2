@@ -13,7 +13,6 @@ jobs:
       - name: Pull and build Docker
         run: |
           cp C:\Users\SMAKA-SERVER\ppdb\seragam-app-v2\docker\env\.env.dev C:\Users\SMAKA-SERVER\ppdb\actions-runner-ss-dev\_work\seragam-app-v2\seragam-app-v2\docker\env\.env.dev
-          cp C:\Users\SMAKA-SERVER\ppdb\seragam-app-v2\docker\env\.env.db C:\Users\SMAKA-SERVER\ppdb\actions-runner-ss-dev\_work\seragam-app-v2\seragam-app-v2\docker\env\.env.db
           ls
           git pull
-          docker-compose -f docker-compose.yaml -p seragam-app-v2-dev up -d --build
+          docker-compose -f docker-compose.dev.yaml -p seragam-app-v2-dev up -d --build
