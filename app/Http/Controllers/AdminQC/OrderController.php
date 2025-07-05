@@ -68,6 +68,12 @@ class OrderController extends Controller
     public function batalkanOrder(Request $request, Order $order)
     {
         DB::transaction(function () use ($order) {
+            if($order->status === 'pending'){
+                foreach ($order->orderItems as $item) {
+                    Stock::where('item_id', $item->item_id)
+                    ->increment('qty', $item->qty_requested);
+                }
+            }
             // Update order status and reset quantities
             $order->update(['status' => 'cancelled']);
             $order->orderItems()->update([

@@ -87,8 +87,16 @@ function RealtimeNotificationHandler() {
             }
         }
     );
-    // TODO: Tambahkan listener untuk alur lain di sini nanti
-    // (misalnya, notifikasi dari Gudang ke QC)
+    useEcho(
+        'ukur', 
+        'OrderReturned', 
+        (event: { order: Order}) => {
+            if(auth.user?.role === 'admin_ukur') {
+                toast.warning('Ada order yang dikembalikan', {
+                    description: `Order #${event.order.order_number} dikembalikan`,
+                });
+            }
+    })
 
     return null; // Komponen ini tidak me-render elemen visual.
 }
