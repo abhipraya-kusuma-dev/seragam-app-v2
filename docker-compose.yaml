@@ -15,9 +15,6 @@ services:
       - pgsql
 
   pgsql:
-    build:
-      context: .
-      target: initdb
     image: postgres:latest
     container_name: SS_DB
     env_file:
