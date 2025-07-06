@@ -9,20 +9,19 @@ use Illuminate\Broadcasting\PrivateChannel;
 use Illuminate\Contracts\Broadcasting\ShouldBroadcast;
 use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
-use App\Models\Order;
+use App\Models\Item;
 
-class OrderDownloaded implements ShouldBroadcast
+class ItemAdded implements ShouldBroadcast
 {
     use Dispatchable, InteractsWithSockets, SerializesModels;
 
     /**
      * Create a new event instance.
      */
-
-     public Order $order;
-    public function __construct(Order $order)
+    public Item $item;
+    public function __construct(Item $item)
     {
-        $this->order = $order;
+        $this->item = $item;
     }
 
     /**
@@ -34,7 +33,7 @@ class OrderDownloaded implements ShouldBroadcast
     {
         return [
             new PrivateChannel('gudang'),
-            new PrivateChannel('qc'),
+            new PrivateChannel('ukur')
         ];
     }
 }

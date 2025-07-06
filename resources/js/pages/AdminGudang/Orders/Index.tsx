@@ -51,11 +51,11 @@ interface Props extends PageProps {
     };
     newOrders: PaginatedOrders;
     viewedOrders: PaginatedOrders;
-    returnedOrders: PaginatedOrders;
+    editedOrders: PaginatedOrders;
     counts: {
         new: number;
         viewed: number;
-        returned: number;
+        edited: number;
     };
     filters?: {
         search?: string;
@@ -68,12 +68,12 @@ interface Props extends PageProps {
 export default function OrderIndex({
     newOrders,
     viewedOrders,
-    returnedOrders,
+    editedOrders,
     counts,
     filters = {}
 }: Props) {
     const { auth } = usePage<Props>().props;
-    const [activeSegment, setActiveSegment] = useState<'new' | 'viewed' | 'returned'>('new');
+    const [activeSegment, setActiveSegment] = useState<'new' | 'viewed' | 'edited'>('new');
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
     const [resendingOrderId, setResendingOrderId] = useState<number | null>(null);
@@ -87,16 +87,9 @@ export default function OrderIndex({
 
     // --- useEcho IMPLEMENTATION ---
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    useEcho('gudang', 'NewOrderCreated', (event: {order: Order}) => {
+    useEcho('gudang', 'NewOrderCreated', () => {
         if(auth.user?.role === 'admin_gudang') {
             router.reload({ only: ['newOrders', 'counts'] });
-        }
-    });
-
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    useEcho('gudang', 'OrderReturned', (event: {order: Order}) => {
-        if(auth.user?.role === 'admin_gudang') {
-            router.reload({ only: ['returnedOrders', 'counts'] });
         }
     });
 
@@ -110,11 +103,17 @@ export default function OrderIndex({
         }
     });
 
+    useEcho('gudang', 'OrderEdited', () => {
+        if(auth.user?.role === 'admin_gudang') {
+            router.reload({only: ['editedOrders', 'viewedOrders','counts']});
+        }
+    });
+
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    useEcho('gudang', 'OrderDownloaded', (event: {order: Order}) => {
+    useEcho('gudang', 'OrderDownloaded', () => {
         if(auth.user?.role === 'admin_gudang') {
             console.log('tes');
-            router.reload({ only: ['newOrders', 'viewedOrders', 'counts'] });
+            router.reload({ only: ['newOrders', 'viewedOrders', 'editedOrders', 'counts'] });
         }
     });
 
@@ -159,7 +158,7 @@ export default function OrderIndex({
         switch (activeSegment) {
             case 'new': return newOrders;
             case 'viewed': return viewedOrders;
-            case 'returned': return returnedOrders;
+            case 'edited': return editedOrders;
             default: return newOrders;
         }
     };
@@ -267,7 +266,7 @@ export default function OrderIndex({
                         {/* FIX: Replaced `any` with a specific type assertion. */}
                         <Tabs
                             value={activeSegment}
-                            onValueChange={(value) => setActiveSegment(value as 'new' | 'viewed' | 'returned')}
+                            onValueChange={(value) => setActiveSegment(value as 'new' | 'viewed' | 'edited')}
                         >
                             <TabsList className="grid w-full grid-cols-3">
                                 <TabsTrigger value="new">
@@ -286,11 +285,11 @@ export default function OrderIndex({
                                         </span>
                                     </div>
                                 </TabsTrigger>
-                                <TabsTrigger value="returned">
+                                <TabsTrigger value="edited">
                                     <div className="flex items-center gap-2">
-                                        <span>Dikembalikan</span>
-                                        <span className="bg-red-100 text-red-800 rounded-full px-2 py-0.5 text-xs font-medium">
-                                            {counts.returned}
+                                        <span>Order Diedit</span>
+                                        <span className="bg-purple-100 text-purple-800 rounded-full px-2 py-0.5 text-xs font-medium">
+                                            {counts.edited}
                                         </span>
                                     </div>
                                 </TabsTrigger>
@@ -373,7 +372,7 @@ export default function OrderIndex({
                                             <TableCell>
                                                 {activeSegment === 'new' && <span className="px-2 py-1 rounded-full text-xs bg-yellow-100 text-yellow-800">Belum Dibaca</span>}
                                                 {activeSegment === 'viewed' && <span className="px-2 py-1 rounded-full text-xs bg-green-100 text-green-800">Sudah Dibaca</span>}
-                                                {activeSegment === 'returned' && <span className="px-2 py-1 rounded-full text-xs bg-red-100 text-red-800">Dikembalikan</span>}
+                                                {activeSegment === 'edited' && <span className="px-2 py-1 rounded-full text-xs bg-purple-100 text-purple-800">Diedit</span>}
                                             </TableCell>
                                             <TableCell className="text-left">
                                                 <div className="flex justify-start gap-2">
@@ -392,29 +391,6 @@ export default function OrderIndex({
                                                             'Detail'
                                                         )}
                                                     </Button>
-                                                    {activeSegment === 'returned' && (
-                                                        <Button
-                                                            variant="secondary"
-                                                            size="sm"
-                                                            onClick={() => handleResendToQc(order.id)}
-                                                            disabled={resendingOrderId === order.id}
-                                                        >
-                                                            {resendingOrderId === order.id ? (
-                                                                <>
-                                                                    <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-current" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                                                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                                                                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                                                                    </svg>
-                                                                    Mengirim...
-                                                                </>
-                                                            ) : (
-                                                                <>
-                                                                    <RotateCcw className="w-4 h-4 mr-1" />
-                                                                    Kirim Ulang
-                                                                </>
-                                                            )}
-                                                        </Button>
-                                                    )}
                                                 </div>
                                             </TableCell>
                                         </TableRow>
@@ -423,7 +399,6 @@ export default function OrderIndex({
                             </TableBody>
                         </Table>
                     </div>
-                    
                     {renderPagination()}
                 </main>
                 

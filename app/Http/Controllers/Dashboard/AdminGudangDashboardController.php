@@ -17,7 +17,7 @@ class AdminGudangDashboardController extends Controller
         'sudah_terbaca' => Order::where('notif_status', true)
                                  ->where('return_status', false)
                                  ->count(),
-        'dikembalikan' => Order::where('return_status', true)->count(),
+        'diedit' => Order::where('return_status', false)->where('edit_status', true)->count(),
     ];
 
     $recentOrders = Order::with(['orderItems.item'])
@@ -26,7 +26,11 @@ class AdminGudangDashboardController extends Controller
         ->get()
         ->map(function ($order) {
             $status = 'belum-terbaca';
-            if ($order->return_status) {
+            if($order->status === 'cancelled'){
+                $status = 'dibatalkan';
+            } elseif (!$order->return_status && $order->edit_status) {
+                $status = 'diedit';
+            } elseif ($order->return_status && !$order->edit_status){
                 $status = 'dikembalikan';
             } elseif ($order->notif_status) {
                 $status = 'sudah-terbaca';

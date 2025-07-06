@@ -32,6 +32,8 @@ class OrderStatusUpdated implements ShouldBroadcast
     {
         return [
             new PrivateChannel('qc'),
+            new PrivateChannel('ukur'),
+            new PrivateChannel('gudang'),
         ];
     }
 }

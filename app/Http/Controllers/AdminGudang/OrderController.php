@@ -55,17 +55,20 @@ class OrderController extends Controller
         $newOrders = $queryBuilder()
             ->where('notif_status', false)
             ->where('return_status', false)
+            ->where('edit_status', false)
             ->oldest()
             ->paginate($perPage);
            
         $viewedOrders = $queryBuilder()
             ->where('notif_status', true)
             ->where('return_status', false)
+            ->where('edit_status', false)
             ->oldest()
             ->paginate($perPage);
            
-        $returnedOrders = $queryBuilder()
-            ->where('return_status', true)
+        $editedOrders = $queryBuilder()
+            ->where('return_status', false)
+            ->where('edit_status', true)
             ->oldest()
             ->paginate($perPage);
         
@@ -73,13 +76,13 @@ class OrderController extends Controller
         $counts = [
             'new' => $newOrders->total(),
             'viewed' => $viewedOrders->total(),
-            'returned' => $returnedOrders->total(),
+            'edited' => $editedOrders->total(),
         ];
         
         return Inertia::render('AdminGudang/Orders/Index', [
             'newOrders' => $newOrders,
             'viewedOrders' => $viewedOrders,
-            'returnedOrders' => $returnedOrders,
+            'editedOrders' => $editedOrders,
             'counts' => $counts,
             'filters' => [
                 'search' => $search,
@@ -105,7 +108,9 @@ class OrderController extends Controller
            
             // Update the notification status
             $order->update([
-                'notif_status' => $request->notif_status
+                'notif_status' => $request->notif_status,
+                'return_status' => false,
+                'edit_status' => false
             ]);
 
             event(new OrderReaded($order));
@@ -128,6 +133,7 @@ class OrderController extends Controller
         }
         $order->update([
             'return_status' => false,
+            'edit_status' => false,
             'notif_status' => true,
         ]);
 
