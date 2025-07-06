@@ -28,6 +28,7 @@ interface Props extends PageProps {
         jenjang: string;
         created_at: string;
         status: string;
+        return_status: boolean;
     }[];
 }
 
@@ -54,6 +55,34 @@ export default function AdminUkurDashboard() {
             }
         }
     );
+
+    useEcho(
+        'ukur', 
+        'OrderReturned', 
+        () => {
+            if (auth.user?.role === 'admin_ukur') {
+                router.reload({ only: ['orderStats', 'recentOrders'] });
+            }
+    });
+
+    useEcho(
+        'ukur',
+        'OrderCancelled', 
+        () => {
+            if (auth.user?.role === 'admin_ukur') {
+                router.reload({ only: ['orders', 'recentOrders'] });
+            }    
+    });
+
+    useEcho(
+        'ukur',
+        'OrderEdited', 
+        () => {
+            if (auth.user?.role === 'admin_ukur') {
+                router.reload({ only: ['orders', 'recentOrders'] });
+            }    
+    });
+    
 
     return (
         <AppLayout>
@@ -170,12 +199,14 @@ export default function AdminUkurDashboard() {
                                                     <td className="p-4">
                                                         <span className={`px-2 py-1 rounded-full text-xs ${
                                                             order.status === 'completed' ? 'bg-green-100 text-green-800' :
-                                                            order.status === 'in-progress' ? 'bg-blue-100 text-blue-800' :
-                                                            order.status === 'cancelled' ? 'bg-red-100 text-red-800' :
+                                                            order.status === 'in-progress' && order.return_status? 'bg-red-100 text-red-800' :
+                                                            order.status === 'in-progress'? 'bg-blue-100 text-blue-800' :
+                                                            order.status === 'cancelled' ? 'bg-red-800 text-red-100' :
                                                             'bg-yellow-100 text-yellow-800'
                                                         }`}>
                                                             {order.status === 'completed' ? 'Selesai' :
-                                                             order.status === 'in-progress' ? 'Sedang Diproses' : 
+                                                             order.status === 'in-progress' && order.return_status? 'Dikembalikan' : 
+                                                             order.status === 'in-progress'? 'Sedang Diproses' : 
                                                              order.status === 'cancelled' ? 'Dibatalkan' : 'Pending'}
                                                         </span>
                                                     </td>

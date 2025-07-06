@@ -5,7 +5,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useState, useEffect, useMemo } from 'react';
 import { Link } from '@inertiajs/react';
-import { ArrowLeft, Plus, Upload, RotateCcw, Edit, AlertCircle } from 'lucide-react';
+import { ArrowLeft, Plus, Upload, RotateCcw, Edit, AlertCircle, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
@@ -82,6 +82,7 @@ const ItemsIndex = ({
     const [isDialogOpen, setIsDialogOpen] = useState(false);
     const [isResetAllDialogOpen, setIsResetAllDialogOpen] = useState(false);
     const [itemToReset, setItemToReset] = useState<number | null>(null);
+    const [itemToDelete, setItemToDelete] = useState<number | null>(null);
     const [isLowStockDialogOpen, setIsLowStockDialogOpen] = useState(false);
     
     // Add processing state from useForm
@@ -101,6 +102,26 @@ const ItemsIndex = ({
     useEcho(
         'gudang',
         'QtyReducedGudang',
+        () => {
+            if (auth.user?.role === 'admin_gudang') {
+                router.reload({ only: ['items', 'lowStockItems'] });
+            }
+        }
+    );
+
+    useEcho(
+        'gudang',
+        'ItemAdded',
+        () => {
+            if (auth.user?.role === 'admin_gudang') {
+                router.reload({ only: ['items', 'lowStockItems'] });
+            }
+        }
+    );
+
+    useEcho(
+        'gudang',
+        'ItemDeleted',
         () => {
             if (auth.user?.role === 'admin_gudang') {
                 router.reload({ only: ['items', 'lowStockItems'] });
@@ -187,6 +208,16 @@ const ItemsIndex = ({
     const handleResetItem = (itemId: number) => {
         router.post(route('admin-gudang.stock.reset', { item: itemId }), {}, {
             onSuccess: () => setItemToReset(null),
+        });
+    };
+
+    const handleDeleteItem = (itemId: number) => {
+        router.delete(route('admin-gudang.items.destroy', { item: itemId }), {
+            preserveScroll: true,
+            onSuccess: () => {
+                setItemToDelete(null);
+                toast.success('Item berhasil dihapus.');
+            }
         });
     };
 
@@ -517,11 +548,39 @@ const ItemsIndex = ({
                                                 </AlertDialogFooter>
                                             </AlertDialogContent>
                                         </AlertDialog>
+
+                                        <AlertDialog 
+                                            open={itemToDelete === item.id} 
+                                            onOpenChange={(open) => open ? setItemToDelete(item.id) : setItemToDelete(null)}
+                                        >
+                                            <AlertDialogTrigger className="text-red-100 bg-red-900 hover:bg-red-900/90 flex items-center px-2 py-1 border rounded">
+                                                <Trash2 className="w-4 h-4 mr-2" />
+                                                Hapus
+                                            </AlertDialogTrigger>
+                                            <AlertDialogContent>
+                                                <AlertDialogHeader>
+                                                    <AlertDialogTitle>Hapus Item Ini?</AlertDialogTitle>
+                                                    <AlertDialogDescription>
+                                                        Tindakan ini akan menghapus permanen item <span className="font-bold">{capitalizeWords(item.nama_item)}</span> beserta stoknya. 
+                                                        <span className="font-bold text-red-500 block mt-2">Tindakan ini tidak dapat dibatalkan!</span>
+                                                    </AlertDialogDescription>
+                                                </AlertDialogHeader>
+                                                <AlertDialogFooter>
+                                                    <AlertDialogCancel>Batal</AlertDialogCancel>
+                                                    <AlertDialogAction 
+                                                        onClick={() => handleDeleteItem(item.id)}
+                                                        className="bg-red-500 hover:bg-red-600"
+                                                    >
+                                                        Lanjutkan Hapus
+                                                    </AlertDialogAction>
+                                                </AlertDialogFooter>
+                                            </AlertDialogContent>
+                                        </AlertDialog>
                                     </TableCell>
                                 </TableRow>
                             );
                         })}
-                    </TableBody>
+                        </TableBody>
                     </Table>
 
                     <Pagination className="mt-6">

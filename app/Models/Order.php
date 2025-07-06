@@ -11,11 +11,13 @@ class Order extends Model
 {
     use HasFactory;
 
-    protected $fillable = ['order_number', 'nama_murid', 'jenjang', 'jenis_kelamin', 'status', 'notif_status', 'return_status', 'created_at', 'updated_at'];
+    protected $fillable = ['order_number', 'nama_murid', 'jenjang', 'jenis_kelamin', 'status', 'notif_status', 'return_status', 'created_at', 'updated_at', 'edit_status', 'locked_at'];
 
     protected $casts = [
         'notif_status' => 'boolean',
         'return_status' => 'boolean',
+        'edit_status' => 'boolean',
+        'locked_at' => 'datetime'
     ];
 
     public function orderItems(): HasMany

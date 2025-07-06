@@ -516,12 +516,12 @@ export default function QualityCheckModal({ isOpen, onClose, order }: QualityChe
                     <div className="flex flex-wrap justify-between gap-4">
                         <div className="flex gap-2">
                             <Button 
-                                variant="destructive"
+                                variant="outline"
                                 onClick={handleReturnOrder}
                                 disabled={isSubmitting || order.status === 'completed' || order.status === 'cancelled'}
                             >
                                 <RotateCcw className="w-4 h-4 mr-1" />
-                                {isSubmitting ? 'Memproses...' : 'Kembalikan Order'}
+                                {isSubmitting ? 'Memproses...' : 'Ajukan Pengeditan'}
                             </Button>
                             <Button 
                                 variant="destructive"

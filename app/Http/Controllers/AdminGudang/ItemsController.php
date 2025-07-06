@@ -13,6 +13,8 @@ use Maatwebsite\Excel\Concerns\WithHeadingRow;
 use Illuminate\Support\Facades\DB;
 use App\Exports\ItemTemplateExport;
 use App\Imports\ItemImport;
+use App\Events\ItemAdded;
+use App\Events\ItemDeleted;
 
 class ItemsController extends Controller
 {
@@ -143,7 +145,8 @@ class ItemsController extends Controller
             return back()->with('error', 'Item dengan nama, jenjang, jenis kelamin, dan ukuran yang sama sudah ada');
         }
 
-        Item::create($validated);
+        $item = Item::create($validated);
+        event(new ItemAdded($item));
 
         return redirect()->route('admin-gudang.items.index')
             ->with('success', 'Item berhasil ditambahkan');
@@ -166,5 +169,26 @@ class ItemsController extends Controller
             dd($e);
             return back()->with('error', 'Terjadi kesalahan: ' . $e->getMessage());
         } 
+    }
+
+    public function destroy(Request $request, Item $item)
+    {
+        if (!$request->user() || $request->user()->role !== 'admin_gudang') {
+            abort(403, 'Unauthorized');
+        }
+
+        event(new ItemDeleted($item));
+
+        // Use a transaction to ensure data integrity
+        DB::transaction(function () use ($item) {
+            // Delete associated stock record if it exists
+            if ($item->stock) {
+                $item->stock()->delete();
+            }
+            // Delete the item
+            $item->delete();
+        });
+
+        return redirect()->route('admin-gudang.items.index');
     }
 }

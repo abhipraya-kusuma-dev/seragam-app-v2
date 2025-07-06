@@ -46,6 +46,7 @@ class AdminQCDashboardController extends Controller
             ->where('status', 'in-progress')
             ->where('notif_status', true)
             ->where('return_status', false)
+            ->where('edit_status', false)
             ->latest()
             ->paginate($perPage, ['*'], 'inProgressPage');
 
@@ -63,7 +64,10 @@ class AdminQCDashboardController extends Controller
 
         $returnedOrders = (clone $query)
             ->where('status', 'in-progress')
-            ->where('return_status', true)
+            ->where(function ($q) {
+                $q->where('return_status', true)
+                  ->orWhere('edit_status', true);
+            })
             ->latest()
             ->paginate($perPage, ['*'], 'returnedPage');
 
@@ -77,7 +81,7 @@ class AdminQCDashboardController extends Controller
         $inProgress = Order::where('status', 'in-progress')->where('return_status', false)->count();
         $pending = Order::where('status', 'pending')->where('return_status', false)->count();
         $completed = Order::where('status', 'completed')->where('return_status', false)->count();
-        $returned = Order::where('status', 'in-progress')->where('return_status', true)->count();
+        $returned = Order::where('status', 'in-progress')->where(function($query){$query->where('return_status', true)->orWhere('edit_status', true);})->count();
         $cancelled = Order::where('status', 'cancelled')->where('return_status', false)->count();
         
         // Pass current filters to frontend

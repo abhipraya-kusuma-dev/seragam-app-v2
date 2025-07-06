@@ -133,10 +133,34 @@ export default function AdminQcDashboard({
     useEcho(
         'qc',
         'OrderReaded',
-        (_event: { order: Order }) => {
+        () => {
             if (auth.user?.role === 'admin_qc') {
                 router.reload({
-                    only: ['inProgressOrders', 'qcStats'],
+                    only: ['inProgressOrders', 'pendingOrders', 'qcStats'],
+                });
+            }
+        }
+    );
+
+    useEcho(
+        'qc',
+        'OrderCancelledQc',
+        () => {
+            if (auth.user?.role === 'admin_qc') {
+                router.reload({
+                    only: ['inProgressOrders', 'pendingOrders', 'cancelledOrders', 'qcStats'],
+                });
+            }
+        }
+    );
+
+    useEcho(
+        'qc',
+        'OrderReturned',
+        () => {
+            if (auth.user?.role === 'admin_qc') {
+                router.reload({
+                    only: ['inProgressOrders', 'pendingOrders', 'returnedOrders', 'qcStats'],
                 });
             }
         }

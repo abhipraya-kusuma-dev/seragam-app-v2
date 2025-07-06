@@ -11,7 +11,7 @@ use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
 use App\Models\Order;
 
-class OrderDownloaded implements ShouldBroadcast
+class OrderEdited implements ShouldBroadcast
 {
     use Dispatchable, InteractsWithSockets, SerializesModels;
 
@@ -19,7 +19,8 @@ class OrderDownloaded implements ShouldBroadcast
      * Create a new event instance.
      */
 
-     public Order $order;
+    public Order $order;
+
     public function __construct(Order $order)
     {
         $this->order = $order;
@@ -34,7 +35,7 @@ class OrderDownloaded implements ShouldBroadcast
     {
         return [
             new PrivateChannel('gudang'),
-            new PrivateChannel('qc'),
+            new PrivateChannel('ukur'),
         ];
     }
 }

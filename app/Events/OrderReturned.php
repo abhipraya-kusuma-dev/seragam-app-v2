@@ -35,6 +35,7 @@ class OrderReturned implements ShouldBroadcast
         return [
             new PrivateChannel('gudang'),
             new PrivateChannel('ukur'),
+            new PrivateChannel('qc'),
         ];
     }  
 }
