@@ -22,23 +22,12 @@ function RealtimeNotificationHandler() {
         }
     );
     useEcho(
-        'gudang',
-        'OrderReturned',
-        (event: {order: Order}) => {
-            if(auth.user?.role === 'admin_gudang') {
-                toast.warning('Ada Order yang dikembalikan dari QC', {
-                    description: `Order #${event.order.order_number}`,
-                });
-            }
-        }
-    );
-    useEcho(
         'qc',
         'OrderReaded',
         (event: {order: Order}) => {
             if(auth.user?.role === 'admin_qc') {
-                toast.info('Ada Order yang baru masuk', {
-                    description: `Order #${event.order.order_number}`,
+                toast.info('Ada Order yang diedit masuk', {
+                    description: `Order #${event.order.order_number}, ${event.order.status === 'in-progress'? 'Perlu Diperiksa' : 'Pending'}`,
                 });
             }
         }
@@ -97,6 +86,16 @@ function RealtimeNotificationHandler() {
                 });
             }
     })
+    useEcho(
+        'gudang', 
+        'OrderEdited', 
+        (event: {order: Order}) => {
+            if(auth.user?.role === 'admin_gudang') {
+                toast.warning('Ada order yang diedit', {
+                    description: `Order #${event.order.order_number} diedit`,
+                })
+            }
+        });
 
     return null; // Komponen ini tidak me-render elemen visual.
 }

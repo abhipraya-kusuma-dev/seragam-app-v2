@@ -9,9 +9,8 @@ use Illuminate\Broadcasting\PrivateChannel;
 use Illuminate\Contracts\Broadcasting\ShouldBroadcast;
 use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
-use App\Models\Order;
 
-class OrderDownloaded implements ShouldBroadcast
+class TriggerPopupUkur implements ShouldBroadcast
 {
     use Dispatchable, InteractsWithSockets, SerializesModels;
 
@@ -19,10 +18,13 @@ class OrderDownloaded implements ShouldBroadcast
      * Create a new event instance.
      */
 
-     public Order $order;
-    public function __construct(Order $order)
+    public string $orderNumber;
+    public bool $modalState;
+
+     public function __construct(string $orderNumber, bool $modalState)
     {
-        $this->order = $order;
+        $this->orderNumber = $orderNumber;
+        $this->modalState = $modalState;        
     }
 
     /**
@@ -33,8 +35,7 @@ class OrderDownloaded implements ShouldBroadcast
     public function broadcastOn(): array
     {
         return [
-            new PrivateChannel('gudang'),
-            new PrivateChannel('qc'),
+            new PrivateChannel('ukur'),
         ];
     }
 }

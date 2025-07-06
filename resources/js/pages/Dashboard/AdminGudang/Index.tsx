@@ -27,7 +27,7 @@ interface Props extends PageProps {
     orderStats: {
         belum_terbaca: number;
         sudah_terbaca: number;
-        dikembalikan: number;
+        diedit: number;
     };
     recentOrders: Order[];
 }
@@ -56,10 +56,28 @@ export default function AdminGudangDashboard() {
             }
         }
     );
+
+    useEcho(
+        'gudang', 
+        'OrderReturned', 
+        () => {
+            if (auth.user?.role === 'admin_gudang') {
+                router.reload({ only: ['orderStats', 'recentOrders'] });
+            }
+    });
+
+    useEcho(
+        'gudang',
+        'OrderCancelledGudang', 
+        () => {
+            if (auth.user?.role === 'admin_gudang') {
+                router.reload({ only: ['orders', 'recentOrders'] });
+            }    
+    });
     
     useEcho(
         'gudang',
-        'OrderReturned',
+        'OrderEdited',
         () => {
             if (auth.user?.role === 'admin_gudang') {
                 router.reload({ only: ['orderStats', 'recentOrders'] });
@@ -133,20 +151,20 @@ export default function AdminGudangDashboard() {
                         </CardContent>
                     </Card>
 
-                    <Card className="border-red-200">
+                    <Card className="border-purple-200">
                         <CardHeader className="flex flex-row items-center justify-between pb-2">
                             <div className="flex items-center gap-2">
-                                <CardTitle className="text-sm font-medium">Order Dikembalikan</CardTitle>
-                                <Badge variant="outline" className="bg-red-100 text-red-800 border-red-200 px-2 py-1">
-                                    {orderStats.dikembalikan}
+                                <CardTitle className="text-sm font-medium">Order Diedit</CardTitle>
+                                <Badge variant="outline" className="bg-purple-100 text-purple-800 border-purple-200 px-2 py-1">
+                                    {orderStats.diedit}
                                 </Badge>
                             </div>
                             <RotateCcw className="h-4 w-4 text-muted-foreground" />
                         </CardHeader>
                         <CardContent>
-                            <div className="text-2xl font-bold">{orderStats.dikembalikan}</div>
+                            <div className="text-2xl font-bold">{orderStats.diedit}</div>
                             <p className="text-xs text-muted-foreground mt-1">
-                                Perlu diperbaiki
+                                Perlu didownload ulang
                             </p>
                         </CardContent>
                     </Card>
@@ -240,9 +258,13 @@ export default function AdminGudangDashboard() {
                                                         <span className={`px-2 py-1 rounded-full text-xs ${
                                                             order.status === 'sudah-terbaca' ? 'bg-green-100 text-green-800' :
                                                             order.status === 'dikembalikan' ? 'bg-red-100 text-red-800' :
+                                                            order.status === 'dibatalkan' ? 'bg-red-800 text-red-100' :
+                                                            order.status === 'diedit' ? 'bg-purple-100 text-purple-800' :
                                                             'bg-yellow-100 text-yellow-800'
                                                         }`}>
                                                             {order.status === 'sudah-terbaca' ? 'Sudah Terbaca' :
+                                                            order.status === 'dibatalkan' ? 'Dibatalkan' :
+                                                             order.status === 'diedit' ? 'Diedit' :
                                                              order.status === 'dikembalikan' ? 'Dikembalikan' : 'Belum Terbaca'}
                                                         </span>
                                                     </td>

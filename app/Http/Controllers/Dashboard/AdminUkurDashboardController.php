@@ -40,6 +40,8 @@ class AdminUkurDashboardController extends Controller
                         'jenjang' => $order->jenjang,
                         'created_at' => $order->created_at,
                         'status' => $order->status,
+                        'return_status' => $order->return_status,
+                        'edit_status' => $order->edit_status
                     ];
                 })
         ]);

@@ -12,6 +12,8 @@ use App\Events\OrderStatusUpdated;
 use App\Events\OrderReturned;
 use App\Events\OrderStatusUpdatedUkur;
 use App\Events\OrderCancelled;
+use App\Events\OrderCancelledGudang;
+use App\Events\OrderCancelledQc;
 use App\Events\QtyReducedGudang;
 use App\Events\StockUpdated;
 
@@ -47,17 +49,22 @@ class OrderController extends Controller
                         ->increment('qty', $item->qty_provided);
                 }
             }
+            if($order->status === 'in-progress'){
+                // Reset order items
+                $order->orderItems()->update([
+                    'qty_provided' => 0,
+                    'status' => 'in-progress'
+                ]);
 
-            // Reset order items
-            $order->orderItems()->update([
-                'qty_provided' => 0,
-                'status' => 'in-progress'
-            ]);
+                // Update order status
+                $order->update([
+                    'return_status' => true,
+                    'status' => 'in-progress'
+                ]);
+            }
 
-            // Update order status
             $order->update([
-                'return_status' => true,
-                'status' => 'in-progress'
+                'return_status' => true
             ]);
             
             event(new OrderReturned($order));
@@ -83,7 +90,9 @@ class OrderController extends Controller
         });
 
         event(new OrderCancelled($order));
-
+        event(new OrderCancelledGudang($order));
+        event(new OrderCancelledQc($order));
+        
         return redirect()->back()->with('success', 'Order berhasil dibatalkan');
     }
 

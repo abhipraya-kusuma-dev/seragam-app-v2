@@ -72,11 +72,14 @@ Route::middleware(['auth'])->prefix('admin/ukur')->group(function () {
     Route::get('/orders/create', [AdminUkurOrderController::class, 'create'])->name('admin-ukur.orders.create');
     Route::post('/orders', [AdminUkurOrderController::class, 'store'])->name('admin-ukur.orders.store');
     Route::get('/orders/{order}', [AdminUkurOrderController::class, 'show'])->name('admin-ukur.orders.show');
+    Route::get('/orders/{order}/edit-data', [AdminUkurOrderController::class, 'editData'])
+        ->name('admin-ukur.orders.edit-data');
+    Route::patch('/orders/{order}/update', [AdminUkurOrderController::class, 'update'])
+        ->name('admin-ukur.orders.update');
 });
 
 // Admin QC Routes
 Route::middleware(['auth'])->prefix('admin/qc')->group(function () {
-    
     Route::get('/orders', [AdminQCOrderController::class, 'index'])->name('admin-qc.orders.index');
     Route::patch('/orders/{order}/return', [AdminQCOrderController::class, 'kembalikanOrder'])->name('admin-qc.orders.return');
     Route::patch('/orders/{order}/cancel', [AdminQCOrderController::class, 'batalkanOrder'])->name('admin-qc.orders.cancel');

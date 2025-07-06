@@ -15,6 +15,17 @@ class Item extends Model
 
     protected $fillable = ['nama_item', 'jenjang', 'jenis_kelamin', 'size'];
 
+    protected static function boot()
+    {
+        parent::boot();
+
+        // This event will fire every time a new Item is successfully created.
+        static::created(function ($item) {
+            // Create a related stock record with a default quantity of 0.
+            $item->stock()->create(['qty' => 0]);
+        });
+    }
+
     public function orderItems(): HasMany
     {
         return $this->hasMany(OrderItem::class);

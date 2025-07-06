@@ -1,7 +1,7 @@
 import { Head, Link, router } from '@inertiajs/react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Plus } from 'lucide-react';
+import { ArrowLeft, Plus, Pencil, Loader2, Search } from 'lucide-react';
 import {
     Pagination,
     PaginationContent,
@@ -14,9 +14,16 @@ import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import AppLayout from '@/layouts/app-layout';
 import { cn } from '@/lib/utils';
 import { useEcho } from '@laravel/echo-react';
-import { useState } from 'react'; // No longer need useEffect
+import { useState, useEffect } from 'react';
+import { toast } from 'sonner';
+import EditOrderModal from '@/components/ukur/EditOrderModal';
+import { Card, CardContent } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
-// --- INTERFACES --- (No changes needed here)
+// Lock duration (15 minutes)
+const LOCK_DURATION = 15 * 60 * 1000; // 15 minutes in milliseconds
 
 interface Order {
     id: number;
@@ -27,6 +34,9 @@ interface Order {
     created_at: string;
     status: string;
     items_count?: number;
+    return_status: boolean;
+    edit_status: boolean;
+    locked_at: string | null;
 }
 
 interface PaginationLink {
@@ -63,16 +73,42 @@ interface Props {
         all: number;
         returned: number;
     };
+    filters?: {
+        search?: string;
+        jenjang?: string;
+        gender?: string;
+    };
 }
 
-// --- COMPONENT ---
-
-const OrderIndex = ({ orders, returnedOrders, counts }: Props) => {
+const OrderIndex = ({ orders, returnedOrders, counts, filters = {} }: Props) => {
     const [activeTab, setActiveTab] = useState('all');
+    const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+    const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
+    const [activeOrderNumbers, setActiveOrderNumbers] = useState<string[]>([]);
+    const [loadingOrder, setLoadingOrder] = useState<string | null>(null);
+    
+    // Filter states
+    const [search, setSearch] = useState(filters.search || '');
+    const [jenjangFilter, setJenjangFilter] = useState(filters.jenjang || 'all');
+    const [genderFilter, setGenderFilter] = useState(filters.gender || 'all');
 
-    // --- REAL-TIME EVENT HANDLING ---
+    // Check if order is locked based on locked_at timestamp
+    const isOrderLocked = (order: Order): boolean => {
+        if (!order.locked_at) {
+            return false;
+        }
+        
+        try {
+            const lockTime = new Date(order.locked_at).getTime();
+            const currentTime = Date.now();
+            return (currentTime - lockTime) < LOCK_DURATION;
+        } catch (e) {
+            console.error('Invalid date format', order.locked_at);
+            return false;
+        }
+    };
 
-    // Generic options for all router.reload calls to keep the user's position
+    // Generic options for all router.reload calls
     const reloadOptions = {
         preserveState: true,
         preserveScroll: true,
@@ -91,11 +127,64 @@ const OrderIndex = ({ orders, returnedOrders, counts }: Props) => {
     });
 
     useEcho('ukur', 'NewOrderCreatedUkur', () => {
-        // A new order only affects the 'all' list and its count
         router.reload({ ...reloadOptions, only: ['orders', 'counts'] });
     });
 
-    // --- DYNAMIC DATA & RENDER FUNCTIONS ---
+    useEcho('ukur', 'TriggerPopupUkur', (event: {orderNumber: string, modalState: boolean}) => {
+
+        
+        // Refresh data to get updated lock status
+        router.reload({ 
+            ...reloadOptions,
+            only: ['orders', 'returnedOrders', 'counts'] 
+        });
+    });
+
+    const handleEditOrder = async (order: Order) => {
+        setLoadingOrder(order.order_number); // Immediately disable button
+        
+        try {
+            await fetch(`/api/trigger/popup-ukur-open`, {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({
+                    orderNumber: order.order_number,
+                    modalState: true
+                }),
+            });
+            setSelectedOrder(order);
+            setIsEditModalOpen(true);
+        } catch (error) {
+            console.error("Gagal memuat data item:", error);
+            toast.error('Gagal memuat data item.');
+        } finally {
+            setLoadingOrder(null); // Reset loading state
+        }
+    };
+
+    const handleEditSuccess = () => {
+        router.reload({ 
+            only: ['orders', 'returnedOrders', 'counts'] 
+        });
+    };
+
+    // Debounced filter effect
+    useEffect(() => {
+        const handler = setTimeout(() => {
+            router.get('/admin/ukur/orders', {
+                tab: activeTab,
+                search,
+                jenjang: jenjangFilter,
+                gender: genderFilter,
+            }, {
+                preserveState: true,
+                preserveScroll: true,
+                replace: true,
+            });
+        }, 500);
+
+        return () => clearTimeout(handler);
+    }, [search, jenjangFilter, genderFilter, activeTab]);
 
     // The active data is now directly from the props
     const activeData = activeTab === 'all' ? orders : returnedOrders;
@@ -107,7 +196,15 @@ const OrderIndex = ({ orders, returnedOrders, counts }: Props) => {
 
         const handlePageChange = (url: string | null) => {
             if (url) {
-                router.get(url, {}, { preserveState: true, preserveScroll: true });
+                router.get(url, {
+                    search,
+                    jenjang: jenjangFilter,
+                    gender: genderFilter,
+                    tab: activeTab,
+                }, {
+                    preserveState: true,
+                    preserveScroll: true,
+                });
             }
         };
 
@@ -143,8 +240,6 @@ const OrderIndex = ({ orders, returnedOrders, counts }: Props) => {
             </div>
         );
     };
-    
-    // --- JSX RENDER --- (No changes needed from here down)
 
     return (
         <AppLayout>
@@ -168,7 +263,7 @@ const OrderIndex = ({ orders, returnedOrders, counts }: Props) => {
                     <TabsList className="grid w-full grid-cols-2">
                         <TabsTrigger value="all">
                             <div className="flex items-center gap-2">
-                                <span>Semua Order</span>
+                                <span>Order Terdistribusi</span>
                                 <span className="bg-blue-100 text-blue-800 rounded-full px-2 py-0.5 text-xs font-medium">
                                     {counts.all}
                                 </span>
@@ -184,6 +279,53 @@ const OrderIndex = ({ orders, returnedOrders, counts }: Props) => {
                         </TabsTrigger>
                     </TabsList>
                 </Tabs>
+
+                {/* Filter Section */}
+                <Card className="mb-6">
+                    <CardContent className="pt-6">
+                        <div className="flex flex-wrap gap-4 items-end">
+                            <div className="flex-1 min-w-[200px] space-y-2">
+                                <Label htmlFor="search-input">Cari Order/Murid</Label>
+                                <div className="relative">
+                                    <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                                    <Input
+                                        id="search-input"
+                                        type="text"
+                                        placeholder="Cari nomor order atau nama murid..."
+                                        value={search}
+                                        onChange={(e) => setSearch(e.target.value)}
+                                        className="w-full pl-9"
+                                    />
+                                </div>
+                            </div>
+                            <div className="w-40 space-y-2">
+                                <Label>Jenjang</Label>
+                                <Select value={jenjangFilter} onValueChange={setJenjangFilter}>
+                                    <SelectTrigger><SelectValue placeholder="Semua Jenjang" /></SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="all">Semua Jenjang</SelectItem>
+                                        <SelectItem value="SDIT">SDIT</SelectItem>
+                                        <SelectItem value="SDS">SDS</SelectItem>
+                                        <SelectItem value="SMP">SMP</SelectItem>
+                                        <SelectItem value="SMA">SMA</SelectItem>
+                                        <SelectItem value="SMK">SMK</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                            <div className="w-40 space-y-2">
+                                <Label>Jenis Kelamin</Label>
+                                <Select value={genderFilter} onValueChange={setGenderFilter}>
+                                    <SelectTrigger><SelectValue placeholder="Semua" /></SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="all">Semua</SelectItem>
+                                        <SelectItem value="Pria">Pria</SelectItem>
+                                        <SelectItem value="Wanita">Wanita</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                        </div>
+                    </CardContent>
+                </Card>
 
                 <div className="rounded-lg shadow border pb-4 px-4 pt-2">
                     <Table>
@@ -221,19 +363,54 @@ const OrderIndex = ({ orders, returnedOrders, counts }: Props) => {
                                         <TableCell>
                                             <span className={`px-2 py-1 rounded text-xs capitalize ${
                                                 order.status === 'completed' ? 'bg-green-100 text-green-800' :
-                                                order.status === 'in-progress' ? 'bg-blue-100 text-blue-800' :
-                                                order.status === 'cancelled' ? 'bg-red-100 text-red-800' :
+                                                order.edit_status? 'bg-purple-100 text-purple-800' :
+                                                order.return_status && !order.edit_status? 'bg-red-100 text-red-800' :
+                                                order.status === 'in-progress'? 'bg-blue-100 text-blue-800' :
+                                                order.status === 'cancelled' ? 'bg-red-800 text-red-00' :
                                                 'bg-yellow-100 text-yellow-800'
                                             }`}>
-                                                {order.status.replace('-', ' ')}
+                                                {order.status === 'completed' ? 'Selesai' :
+                                                order.edit_status? 'Diedit' :
+                                                order.return_status && !order.edit_status? 'Dikembalikan' :
+                                                order.status === 'in-progress'? 'Sedang Diproses' :
+                                                order.status === 'cancelled' ? 'Dibatalkan' :
+                                                'Pending'}
                                             </span>
                                         </TableCell>
                                         <TableCell className="flex gap-2">
-                                            <Link href={route('admin-ukur.orders.show', { order: order.id })}>
-                                                <Button variant="outline" size="sm">
-                                                    Detail
+                                            {activeTab === 'returned' ? (
+                                                <Button 
+                                                    variant="outline" 
+                                                    size="sm"
+                                                    onClick={() => handleEditOrder(order)}
+                                                    disabled={
+                                                        isOrderLocked(order) || 
+                                                        activeOrderNumbers.includes(order.order_number) ||
+                                                        loadingOrder === order.order_number
+                                                    }
+                                                    className="min-w-[80px] justify-center"
+                                                >
+                                                    {loadingOrder === order.order_number ? (
+                                                        <div className="flex items-center gap-2">
+                                                            <Loader2 className="w-4 h-4 animate-spin" />
+                                                            Memuat...
+                                                        </div>
+                                                    ) : isOrderLocked(order) || activeOrderNumbers.includes(order.order_number) ? (
+                                                        "Sedang diedit"
+                                                    ) : (
+                                                        <div className="flex items-center gap-2">
+                                                            <Pencil className="w-4 h-4" />
+                                                            Edit
+                                                        </div>
+                                                    )}
                                                 </Button>
-                                            </Link>
+                                            ) : (
+                                                <Link href={route('admin-ukur.orders.show', { order: order.id })}>
+                                                    <Button variant="outline" size="sm">
+                                                        Detail
+                                                    </Button>
+                                                </Link>
+                                            )}
                                         </TableCell>
                                     </TableRow>
                                 ))
@@ -243,6 +420,26 @@ const OrderIndex = ({ orders, returnedOrders, counts }: Props) => {
                     {renderPagination(activeData)}
                 </div>
             </div>
+            {selectedOrder && (
+                <EditOrderModal
+                    isOpen={isEditModalOpen}
+                    onClose={async () => {
+                        setIsEditModalOpen(false);
+                        if (selectedOrder) {
+                            await fetch(`/api/trigger/popup-ukur-closed`, {
+                                method: 'POST',
+                                headers: {'Content-Type': 'application/json'},
+                                body: JSON.stringify({
+                                    orderNumber: selectedOrder.order_number,
+                                    modalState: false
+                                }),
+                            });
+                        }
+                    }}
+                    order={selectedOrder}
+                    onSuccess={handleEditSuccess}
+                />
+            )}
         </AppLayout>
     );
 };
