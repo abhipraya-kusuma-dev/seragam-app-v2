@@ -285,6 +285,7 @@ class OrderController extends Controller
             'stock' => $orderItem->item->stock->qty ?? 0,
             'qty_requested' => $orderItem->qty_requested,
             'qty_provided' => $orderItem->qty_provided,
+            'status' => $orderItem->status,
         ];
     });
 
@@ -337,7 +338,7 @@ class OrderController extends Controller
                         // Update or create with these values
                         'qty_requested' => $itemData['qty_requested'],
                         'order_number'  => $order->order_number,
-                        'status'        => $order->status,
+                        'status'        => $itemData['status'], 
                         'qty_provided'  => $itemData['qty_provided'],
                     ]
                 );

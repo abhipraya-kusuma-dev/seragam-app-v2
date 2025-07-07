@@ -366,7 +366,7 @@ const OrderIndex = ({ orders, returnedOrders, counts, filters = {} }: Props) => 
                                                 order.edit_status? 'bg-purple-100 text-purple-800' :
                                                 order.return_status && !order.edit_status? 'bg-red-100 text-red-800' :
                                                 order.status === 'in-progress'? 'bg-blue-100 text-blue-800' :
-                                                order.status === 'cancelled' ? 'bg-red-800 text-red-00' :
+                                                order.status === 'cancelled' ? 'bg-red-800 text-red-100' :
                                                 'bg-yellow-100 text-yellow-800'
                                             }`}>
                                                 {order.status === 'completed' ? 'Selesai' :

@@ -82,7 +82,10 @@ class OrderController extends Controller
                 }
             }
             // Update order status and reset quantities
-            $order->update(['status' => 'cancelled']);
+            $order->update([
+                'status' => 'cancelled',
+                'edit_status' => false
+            ]);
             $order->orderItems()->update([
                 'qty_provided' => 0,
                 'status' => 'pending'
