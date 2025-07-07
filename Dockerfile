@@ -3,6 +3,8 @@
 # ============================
 FROM node:22-alpine as frontend
 
+ARG APP_ENV
+
 # Set working directory
 WORKDIR /app
 
@@ -13,9 +15,15 @@ COPY package*.json ./
 RUN npm install
 
 # Copy the rest of the code
-COPY docker/env/.env.prod .env
+if [ "$APP_ENV" = "production" ]; then
+  COPY docker/env/.env.prod .env
+  COPY docker/env/.env.dev .env.dev
+else
+  COPY docker/env/.env.dev .env
+  COPY docker/env/.env.prod .env.prod
+fi
+
 COPY docker/env/.env.db .env.db
-COPY docker/env/.env.dev .env.dev
 COPY . .
 
 # Build Tailwind / JS assets

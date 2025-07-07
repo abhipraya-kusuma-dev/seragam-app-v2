@@ -8,6 +8,8 @@ on:
 jobs:
   deploy-prod:
     runs-on: ss-prod
+    env:
+      APP_ENV: production
     steps:
       - uses: actions/checkout@v3
       - name: Pull and build Docker
