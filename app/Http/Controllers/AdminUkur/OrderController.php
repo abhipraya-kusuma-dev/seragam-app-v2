@@ -222,40 +222,47 @@ class OrderController extends Controller
     }
 
     public function editData(Request $request, Order $order)
-    {
-        if (!$request->user() || $request->user()->role !== 'admin_ukur') {
-            abort(403, 'Unauthorized');
-        }
+{
+    if (!$request->user() || $request->user()->role !== 'admin_ukur') {
+        abort(403, 'Unauthorized');
+    }
 
-        // Get all items
-        $orderJenjang = $order->jenjang;
+    $orderJenjang = $order->jenjang;
+    $orderJenisKelamin = $order->jenis_kelamin;
 
-        // Get items filtered by the order's jenis_kelamin and a flexible jenjang match.
-        $items = Item::with('stock')
-        ->where('jenis_kelamin', $order->jenis_kelamin)
+    $items = Item::with('stock')
+        ->where(function ($query) use ($orderJenisKelamin) {
+            $query->where('jenis_kelamin', $orderJenisKelamin)
+                  ->orWhere('jenis_kelamin', 'UNI');
+        })
         ->where(function ($query) use ($orderJenjang) {
             
             if ($orderJenjang === 'SDIT') {
-                // For SDIT: Find items containing 'SDIT' or 'SD', but explicitly exclude any 'SDS' items.
                 $query->where(function ($q) {
                     $q->where('jenjang', 'LIKE', '%SDIT%')
-                    ->orWhere('jenjang', 'LIKE', '%SD%');
+                      ->orWhere('jenjang', 'LIKE', '%SD%');
                 })->where('jenjang', 'NOT LIKE', '%SDS%');
 
             } else if ($orderJenjang === 'SDS') {
-                // For SDS: Find items containing 'SDS' or 'SD', but explicitly exclude any 'SDIT' items.
                 $query->where(function ($q) {
                     $q->where('jenjang', 'LIKE', '%SDS%')
-                    ->orWhere('jenjang', 'LIKE', '%SD%');
+                      ->orWhere('jenjang', 'LIKE', '%SD%');
                 })->where('jenjang', 'NOT LIKE', '%SDIT%');
 
             } else {
-                // For all other cases (SMP, SMA, etc.), use the general search.
-                $query->where('jenjang', 'LIKE', '%' . $orderJenjang . '%');
+                // For cases like SMP, SMA, SMK:
+                // Find items that are an EXACT match (ignoring spaces) OR a partial match.
+                $query->where(function ($q) use ($orderJenjang) {
+                    // 1. Find exact matches, even with extra whitespace (e.g., 'SMK ')
+                    $q->whereRaw('TRIM(jenjang) = ?', [$orderJenjang])
+                      // 2. Also find compound matches (e.g., 'SMA-SMK')
+                      ->orWhere('jenjang', 'LIKE', '%' . $orderJenjang . '%');
+                });
             }
         })
         ->get()
         ->map(function ($item) {
+            // ... mapping function is unchanged
             return [
                 'id' => $item->id,
                 'nama_item' => $item->nama_item,
@@ -266,26 +273,26 @@ class OrderController extends Controller
             ];
         });
 
-        // Get order items
-        $order->load('orderItems.item');
-        $orderItems = $order->orderItems->map(function ($orderItem) {
-            return [
-                'id' => $orderItem->item->id,
-                'nama_item' => $orderItem->item->nama_item,
-                'jenjang' => $orderItem->item->jenjang,
-                'jenis_kelamin' => $orderItem->item->jenis_kelamin,
-                'size' => $orderItem->item->size,
-                'stock' => $orderItem->item->stock->qty ?? 0,
-                'qty_requested' => $orderItem->qty_requested,
-                'qty_provided' => $orderItem->qty_provided,
-            ];
-        });
+    // ... loading and mapping order items is unchanged
+    $order->load('orderItems.item');
+    $orderItems = $order->orderItems->map(function ($orderItem) {
+        return [
+            'id' => $orderItem->item->id,
+            'nama_item' => $orderItem->item->nama_item,
+            'jenjang' => $orderItem->item->jenjang,
+            'jenis_kelamin' => $orderItem->item->jenis_kelamin,
+            'size' => $orderItem->item->size,
+            'stock' => $orderItem->item->stock->qty ?? 0,
+            'qty_requested' => $orderItem->qty_requested,
+            'qty_provided' => $orderItem->qty_provided,
+        ];
+    });
 
-        return response()->json([
-            'items' => $items,
-            'orderItems' => $orderItems,
-        ]);
-    }
+    return response()->json([
+        'items' => $items,
+        'orderItems' => $orderItems,
+    ]);
+}
 
     public function update(Request $request, Order $order)
     {
