@@ -22,6 +22,7 @@ interface Item {
 }
 
 interface SelectedItem extends Item {
+    status: string;
     qty_requested: number;
     qty_provided: number;
 }
@@ -44,6 +45,7 @@ interface EditOrderResponse {
         jenis_kelamin: string;
         size: string;
         stock: number;
+        status: string;
         qty_requested: number;
         qty_provided: number;
     }[];
@@ -107,6 +109,7 @@ export default function EditOrderModal({
                         jenis_kelamin: item.jenis_kelamin,
                         size: item.size,
                         stock: item.stock,
+                        status: item.status,
                         qty_requested: item.qty_requested,
                         qty_provided: item.qty_provided
                     }));
@@ -200,7 +203,7 @@ export default function EditOrderModal({
             );
             setData('items', updatedItems);
         } else {
-            setData('items', [...data.items, { ...item, qty_requested: 1, qty_provided: 0}]);
+            setData('items', [...data.items, { ...item, qty_requested: 1, qty_provided: 0, status: 'in-progress'}]);
         }
         
         toast.success("Item Ditambahkan", { 
