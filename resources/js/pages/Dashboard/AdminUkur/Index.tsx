@@ -5,7 +5,7 @@ import { usePage } from '@inertiajs/react';
 import { PageProps } from '@inertiajs/core';
 import { useForm } from '@inertiajs/react';
 import { Card, CardContent, CardTitle, CardDescription } from '@/components/ui/card';
-import { Plus, List, LogOut } from 'lucide-react';
+import { Plus, List, LogOut, FileText } from 'lucide-react';
 import { Link } from '@inertiajs/react';
 import { useEcho } from '@laravel/echo-react';
 
@@ -96,6 +96,12 @@ export default function AdminUkurDashboard() {
                         </p>
                     </div>
                     <div className="flex gap-2">
+                        <Link href={route('laporan.index')}>
+                            <Button variant="outline" className="flex items-center gap-2">
+                                <FileText className="w-4 h-4" />
+                                Laporan
+                            </Button>
+                        </Link>
                         <Button 
                             variant="outline" 
                             onClick={() => {

@@ -16,6 +16,7 @@ import {
     RotateCcw,
     Clock,
     LogOut,
+    FileText
 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import QualityCheckModal from '@/components/qc/QualityCheckModal';
@@ -26,6 +27,7 @@ import { Label } from '@/components/ui/label';
 import { cn } from '@/lib/utils';
 import { useEcho } from '@laravel/echo-react';
 import { toast } from 'sonner';
+import { Link } from '@inertiajs/react';
 
 export interface Order {
     id: number;
@@ -484,17 +486,24 @@ export default function AdminQcDashboard({
                         <h1 className="text-3xl font-bold">Dashboard Quality Control</h1>
                         <p className="text-muted-foreground">Kontrol kualitas pesanan seragam</p>
                     </div>
-                    <div className="flex items-center gap-4">
-                        <Button
-                            variant="outline"
+                    <div className="flex gap-2">
+                        <Link href={route('laporan.index')}>
+                            <Button variant="outline" className="flex items-center gap-2">
+                                <FileText className="w-4 h-4" />
+                                Laporan
+                            </Button>
+                        </Link>
+                        <Button 
+                            variant="outline" 
                             onClick={() => {
                                 logoutForm.post('/logout', {
                                     preserveScroll: true,
                                     preserveState: false,
                                 });
                             }}
+                            className="flex items-center gap-2"
                         >
-                            <LogOut className="w-4 h-4 mr-2" />
+                            <LogOut className="w-4 h-4" />
                             Keluar
                         </Button>
                     </div>

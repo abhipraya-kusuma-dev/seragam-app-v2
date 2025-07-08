@@ -11,7 +11,8 @@ import {
     RotateCcw,
     LogOut,
     List,
-    ShoppingBag
+    ShoppingBag,
+    FileText
 } from 'lucide-react';
 import { useEcho } from '@laravel/echo-react';
 import { Order } from '@/types/order';
@@ -97,6 +98,12 @@ export default function AdminGudangDashboard() {
                         </p>
                     </div>
                     <div className="flex gap-2">
+                        <Link href={route('laporan.index')}>
+                            <Button variant="outline" className="flex items-center gap-2">
+                                <FileText className="w-4 h-4" />
+                                Laporan
+                            </Button>
+                        </Link>
                         <Button 
                             variant="outline" 
                             onClick={() => {
