@@ -12,6 +12,7 @@ use App\Http\Controllers\Dashboard\AdminUkurDashboardController;
 use App\Http\Controllers\Dashboard\AdminGudangDashboardController;
 use App\Http\Controllers\Dashboard\AdminQCDashboardController;
 use Illuminate\Http\Request;
+use App\Http\Controllers\LaporanController;
 
 Route::middleware('guest')->get('/', [AuthenticatedSessionController::class, 'create'])->name('home');
 
@@ -85,6 +86,21 @@ Route::middleware(['auth'])->prefix('admin/qc')->group(function () {
     Route::patch('/orders/{order}/cancel', [AdminQCOrderController::class, 'batalkanOrder'])->name('admin-qc.orders.cancel');
     Route::patch('/orders/{order}/complete-qc', [AdminQCOrderController::class, 'selesaikanQC'])->name('admin-qc.orders.complete-qc');
 });
+
+
+// ... other routes
+
+Route::middleware(['auth'])->group(function () {
+    // ... your existing authenticated routes
+
+    // Laporan Routes
+    Route::get('/laporan', [LaporanController::class, 'index'])->name('laporan.index');
+    Route::post('/laporan/preview', [LaporanController::class, 'preview'])->name('laporan.preview');
+    Route::post('/laporan/export', [LaporanController::class, 'export'])->name('laporan.export');
+});
+
+// ... other routes
+
 
 require __DIR__.'/settings.php';
 require __DIR__.'/auth.php';
